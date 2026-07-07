@@ -1,0 +1,70 @@
+{
+  "entities": {
+    "userProfile": {
+      "title": "UserProfile",
+      "description": "User profile with balance, points, level, and recycling statistics.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier matching Firebase Auth UID."
+        },
+        "fullName": {
+          "type": "string",
+          "description": "Human-readable full name."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user."
+        },
+        "isLoggedIn": {
+          "type": "boolean",
+          "description": "Whether the user is currently logged in."
+        },
+        "municipality": {
+          "type": "string",
+          "description": "User's home municipality for localized waste sorting instructions."
+        },
+        "balance": {
+          "type": "number",
+          "description": "User's cash/pant balance in DKK (kr)."
+        },
+        "points": {
+          "type": "number",
+          "description": "Cirkel Points accumulated."
+        },
+        "scansCount": {
+          "type": "number",
+          "description": "Total number of successful scans."
+        },
+        "co2SavedKg": {
+          "type": "number",
+          "description": "Approximate CO2 emission averted in kg."
+        },
+        "streakDays": {
+          "type": "number",
+          "description": "Sequential days active streak."
+        },
+        "level": {
+          "type": "number",
+          "description": "User's gamification level."
+        },
+        "memberStatus": {
+          "type": "string",
+          "description": "Membership tier (e.g. Bronze, Silver, Guld)."
+        }
+      },
+      "required": [
+        "id",
+        "fullName",
+        "email"
+      ]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "userProfile",
+      "description": "Durable profiles storing balances and stats for recycled packaging."
+    }
+  }
+}

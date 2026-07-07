@@ -1,0 +1,36 @@
+node_modules
+dist
+investor/node_modules
+
+.vercel
+
+# --- Tilføjet 2026-07-07 før første commit ---
+
+# Alt der starter med .env ignoreres — undtaget .env.example (skabelon uden værdier)
+.env*
+!.env.example
+
+# Firebase-config med rigtig eksponeret nøgle
+# (CLAUDE.md siger: bør roteres før repoet pushes offentligt)
+firebase-applet-config.json
+
+# Investor build-output
+investor/out/
+
+# Diverse credentials
+*.key
+*.pem
+*credentials*.json
+*secret*.json
+service-account*.json
+
+# Editor / OS-artefakter
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
+
+# Scratch / tmp
+scratch/
+tmp/
+*.tmp

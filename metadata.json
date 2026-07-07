@@ -1,0 +1,6 @@
+{
+  "name": "Cirkel",
+  "description": "A circular economy app for scanning packaging, earning rewards, and tracking recycling impact.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

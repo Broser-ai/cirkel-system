@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cirkel — AI-team & Gurus</title>
+<style>
+  :root{
+    --forest:#0C3A2C; --emerald:#2E7D5B; --orange:#F97E19; --orange-d:#C9670F;
+    --mint:#EEF5F1; --mint2:#E4EFE9; --ink:#16241D; --muted:#5E6E66;
+    --stage:#F1F6F3; --paper:#FFFFFF; --line:#DCE7E1; --teal:#1E6F57;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);color:var(--ink);background:
+    radial-gradient(1000px 600px at 90% -10%,#DCEBE3 0,transparent 55%),
+    radial-gradient(800px 500px at -5% 110%,#F7E7D5 0,transparent 50%),var(--stage);
+    -webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:1080px;margin:0 auto;padding:26px 22px 60px}
+
+  /* header */
+  .head{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+  .logo{width:44px;height:44px;border-radius:13px;background:var(--emerald);display:grid;place-items:center;box-shadow:0 8px 18px rgba(12,58,44,.25)}
+  .logo svg{width:25px;height:25px}
+  .head h1{font-size:22px;font-weight:800;color:var(--forest);letter-spacing:-.01em}
+  .head .sub{font-size:13px;color:var(--muted);margin-top:2px}
+
+  /* rules banner */
+  .rules{background:var(--forest);color:#fff;border-radius:16px;padding:16px 20px;margin:18px 0 20px;
+    display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center}
+  .rules .t{font-weight:800;font-size:13px;letter-spacing:.06em;color:var(--orange);text-transform:uppercase;width:100%}
+  .rules .r{display:flex;align-items:center;gap:9px;font-size:13.5px;color:#DCEAE2}
+  .rules .r svg{width:16px;height:16px;flex-shrink:0;color:var(--orange)}
+
+  /* controls */
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+  .tabs{display:flex;gap:7px;flex-wrap:wrap}
+  .tab{border:1px solid var(--line);background:var(--paper);color:var(--forest);border-radius:999px;
+    padding:8px 15px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+  .tab:hover{background:var(--mint)}
+  .tab.on{background:var(--forest);color:#fff;border-color:var(--forest)}
+  .tab .n{opacity:.6;font-weight:700;margin-left:5px}
+  .search{margin-left:auto;position:relative}
+  .search input{border:1px solid var(--line);border-radius:11px;padding:9px 14px 9px 34px;font-size:13.5px;
+    width:200px;font-family:var(--sans);outline:none;background:var(--paper)}
+  .search input:focus{border-color:var(--emerald)}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted)}
+
+  /* grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px 17px;cursor:pointer;
+    transition:.18s;box-shadow:0 1px 0 rgba(12,58,44,.03)}
+  .card:hover{border-color:var(--emerald);box-shadow:0 12px 26px -16px rgba(12,58,44,.34);transform:translateY(-2px)}
+  .ctop{display:flex;align-items:flex-start;gap:12px}
+  .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;flex-shrink:0}
+  .ic svg{width:23px;height:23px;color:#fff}
+  .ctitle{flex:1;min-width:0}
+  .ctitle .nm{font-size:15.5px;font-weight:800;color:var(--ink);line-height:1.2}
+  .ctitle .dm{font-size:12px;color:var(--muted);margin-top:3px}
+  .badge{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:7px;white-space:nowrap}
+  .b-orch{background:#FCE8D3;color:var(--orange-d)}
+  .b-master{background:#DCEFE4;color:var(--emerald)}
+  .b-guru{background:#E2ECF0;color:var(--teal)}
+  .does{font-size:13px;color:#33433b;margin-top:12px;line-height:1.45}
+  .more{max-height:0;overflow:hidden;transition:max-height .3s ease}
+  .card.open .more{max-height:520px}
+  .more-inner{padding-top:13px;margin-top:13px;border-top:1px solid var(--line)}
+  .sec{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0 0 7px}
+  .more ul{list-style:none;margin:0 0 12px}
+  .more li{font-size:12.5px;color:#33433b;line-height:1.4;padding-left:18px;position:relative;margin-bottom:5px}
+  .more li:before{content:"";position:absolute;left:3px;top:7px;width:6px;height:6px;border-radius:50%;background:var(--emerald)}
+  .mandate{background:var(--mint);border-radius:10px;padding:9px 11px;font-size:12.5px;color:var(--forest);margin-bottom:12px}
+  .canrow{display:flex;gap:8px;margin-bottom:6px;font-size:12px}
+  .canrow .lab{font-weight:800;width:64px;flex-shrink:0}
+  .can .lab{color:var(--emerald)} .cant .lab{color:var(--orange-d)}
+  .chev{margin-top:11px;font-size:11.5px;color:var(--emerald);font-weight:700;display:flex;align-items:center;gap:5px}
+  .chev svg{width:13px;height:13px;transition:transform .3s}
+  .card.open .chev svg{transform:rotate(180deg)}
+
+  .status{margin-top:24px;background:var(--mint2);border:1px solid var(--line);border-radius:14px;
+    padding:14px 18px;font-size:13.5px;color:var(--forest);display:flex;align-items:center;gap:10px}
+  .status svg{width:18px;height:18px;color:var(--orange);flex-shrink:0}
+  .status b{font-weight:800}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 7 12 2 17 7"/><path d="M12 2v9"/><path d="M21 11.5a9 9 0 1 1-9-9"/></svg></div>
+    <div><h1>Cirkel — AI-udviklingsteam</h1><div class="sub">Hvem er hvem · hvad de laver · hvad de må. Supabase + Vercel · kørt i Claude Code.</div></div>
+  </div>
+
+  <div class="rules">
+    <div class="t">Reglerne — gælder alle</div>
+    <div class="r"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Alt kan ændres — men intet uden din accept</div>
+    <div class="r"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Hver ændring vises native i sideruden først</div>
+    <div class="r"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Én ændring ad gangen</div>
+  </div>
+
+  <div class="controls">
+    <div class="tabs" id="tabs"></div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" placeholder="Søg rolle eller domæne…">
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="status">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+    <span><b>Status:</b> Udkast — 0 roller aktiveret, 0 filer i din app rørt. Alt afventer din accept.</span>
+  </div>
+</div>
+
+<script>
+const I = {
+  orch:'<path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="4"/>',
+  db:'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  rocket:'<path d="M5 13c-1.5 1.3-2 5-2 5s3.7-.5 5-2"/><path d="M12 15l-3-3a13 13 0 0 1 9-9 13 13 0 0 1-1 6 13 13 0 0 1-5 6z"/>',
+  shield:'<path d="M12 3l8 3v6c0 5-3.4 7.7-8 9-4.6-1.3-8-4-8-9V6z"/>',
+  check:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  docs:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  recycle:'<polyline points="7 7 12 2 17 7"/><path d="M12 2v9"/><path d="M21 11.5a9 9 0 1 1-9-9"/>',
+  scale:'<path d="M12 3v18M5 8h14M7 8l-3 6a3 3 0 0 0 6 0zM17 8l-3 6a3 3 0 0 0 6 0z"/>',
+  link:'<path d="M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/>',
+  edge:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18"/>',
+  react:'<circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>',
+  robot:'<rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 8V4M9 14h.01M15 14h.01"/>',
+  ux:'<path d="M3 3h18v14H3z"/><path d="M7 21h10M9 17v4M15 17v4"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+};
+const TEAM = [
+  {grp:'orchestrator',badge:'Orchestrator',bc:'b-orch',color:'#F97E19',ic:I.orch,
+    nm:'Orchestrator (Conductor)',dm:'Styring & governance',
+    does:'Deler arbejdet ud, håndhæver reglerne og sikrer at intet når forbi dig uden accept.',
+    resp:['Sætter rækkefølge på opgaver','Kræver native preview + accept før alt','Kobler den rette master og guru på hver opgave'],
+    mandate:'Ansvarlig for at ingen i teamet bryder reglerne.',
+    can:'Sætte flow, kræve accept-gate', cant:'Lade en agent springe accept over'},
+
+  {grp:'master',badge:'Master',bc:'b-master',color:'#2E7D5B',ic:I.db,
+    nm:'Backend Master — Supabase',dm:'Database · RPC · RLS',
+    does:'Kører dit skema og bygger den database-side, der får appen til at spille.',
+    resp:['Kører dit supabase_schema.sql som det er','Foreslår additive RPC/indeks/policy som forbedring','Holder Cirkel på sit eget projekt'],
+    mandate:'Rører aldrig det delte MTC/NEXUS-projekt.',
+    can:'Køre dit skema, foreslå forbedringer', cant:'Redesigne skema/funktioner uden din accept'},
+
+  {grp:'master',badge:'Master',bc:'b-master',color:'#2E7D5B',ic:I.rocket,
+    nm:'Deploy Master — Vercel',dm:'Web-deployment',
+    does:'Får systemet live på web via Vercel + Supabase.',
+    resp:['Opsætter deployment og miljøvariabler','Viser diff før noget røres','Verificerer at produktionsbuildet kører'],
+    mandate:'Tilpasser deployment uden at ændre app-logik uden accept.',
+    can:'Tilføje deploy-filer, vise diff', cant:'Ændre app-logik/design uden din accept'},
+
+  {grp:'master',badge:'Master',bc:'b-master',color:'#2E7D5B',ic:I.shield,
+    nm:'Frontend Guardian',dm:'Design & funktioner',
+    does:'Vogter dit design og dine funktioner — fanger alt der rører UI eller adfærd.',
+    resp:['Reviewer ethvert forslag der nærmer sig UI/logik','Sikrer at det fremlægges til din accept','Holder din Gemini-app kanonisk'],
+    mandate:'Alt der rører design/funktioner skal forbi dig.',
+    can:'Markere og fremlægge UI-forslag', cant:'Ændre UI eller adfærd uden din accept'},
+
+  {grp:'master',badge:'Master',bc:'b-master',color:'#2E7D5B',ic:I.check,
+    nm:'QA / Verifikation Master',dm:'Test & kvalitet',
+    does:'Bygger og tester efter hver accept og bekræfter at intet eksisterende er brudt.',
+    resp:['Kører build + test efter hver ændring','Rapporterer ærligt — også fejl','Bekræfter at appen stadig spiller'],
+    mandate:'Godkender aldrig på dine vegne.',
+    can:'Køre build/test, rapportere', cant:'Acceptere ændringer for dig'},
+
+  {grp:'master',badge:'Master',bc:'b-master',color:'#2E7D5B',ic:I.lock,
+    nm:'Security Master',dm:'Nøgler & secrets',
+    does:'Holder hemmeligheder sikre og flager eksponerede nøgler.',
+    resp:['Flager fx eksponeret Firebase-nøgle','Holder service_role server-only','Sørger for at intet hemmeligt committes'],
+    mandate:'Commit aldrig secrets.',
+    can:'Flage og foreslå rotation', cant:'Dele eller committe hemmeligheder'},
+
+  {grp:'master',badge:'Master',bc:'b-master',color:'#2E7D5B',ic:I.docs,
+    nm:'Docs / Handover Master',dm:'Dokumentation',
+    does:'Holder governance og opgavetavlen opdateret, så alt er sporbart.',
+    resp:['Noterer hver accept og status','Holder CLAUDE.md aktuel','Sikrer ren handover'],
+    mandate:'Ændrer aldrig reglerne uden din accept.',
+    can:'Opdatere status og noter', cant:'Ændre regler uden din accept'},
+
+  {grp:'guru',badge:'Guru',bc:'b-guru',color:'#1E6F57',ic:I.scale,
+    nm:'Cirkulær Økonomi & EPR/PPWR',dm:'Regulering',
+    does:'Rådgiver om korrekt EPR-rapportering, PPWR-krav og materialestrømme.',
+    resp:['Sikrer regulatorisk korrekthed','Reviewer EPR/PPWR-logik','Foreslår — udfører aldrig selv'],
+    mandate:'Anbefaler; ændrer aldrig noget selv.',
+    can:'Reviewe og anbefale', cant:'Udføre ændringer'},
+
+  {grp:'guru',badge:'Guru',bc:'b-guru',color:'#1E6F57',ic:I.shield,
+    nm:'GDPR / Compliance',dm:'EU-jura',
+    does:'Vogter dataminimering, EU-region og RLS ud fra GDPR.',
+    resp:['Reviewer datahåndtering','Tjekker EU-jurisdiktion','Foreslår compliance-forbedringer'],
+    mandate:'Anbefaler; ændrer aldrig noget selv.',
+    can:'Reviewe og anbefale', cant:'Udføre ændringer'},
+
+  {grp:'guru',badge:'Guru',bc:'b-guru',color:'#1E6F57',ic:I.link,
+    nm:'Kryptografisk Ledger',dm:'Integritet',
+    does:'Sikrer hash-kædens integritet, write-once og verificerbarhed.',
+    resp:['Reviewer ledger-design','Bekræfter kæde-integritet','Foreslår verifikationsforbedringer'],
+    mandate:'Anbefaler; ændrer aldrig noget selv.',
+    can:'Reviewe og anbefale', cant:'Udføre ændringer'},
+
+  {grp:'guru',badge:'Guru',bc:'b-guru',color:'#1E6F57',ic:I.db,
+    nm:'Supabase / Postgres',dm:'Database',
+    does:'Dyb rådgivning om skema, RPC, RLS og performance.',
+    resp:['Reviewer skema og forespørgsler','Foreslår indeks og policies','Vurderer performance'],
+    mandate:'Anbefaler; ændrer aldrig noget selv.',
+    can:'Reviewe og anbefale', cant:'Udføre ændringer'},
+
+  {grp:'guru',badge:'Guru',bc:'b-guru',color:'#1E6F57',ic:I.edge,
+    nm:'Vercel / Edge',dm:'Deployment',
+    does:'Rådgiver om build, edge, miljøvariabler og region.',
+    resp:['Reviewer deploy-opsætning','Foreslår edge/region-valg','Vurderer build-ydeevne'],
+    mandate:'Anbefaler; ændrer aldrig noget selv.',
+    can:'Reviewe og anbefale', cant:'Udføre ændringer'},
+
+  {grp:'guru',badge:'Guru',bc:'b-guru',color:'#1E6F57',ic:I.react,
+    nm:'React / Frontend',dm:'UI',
+    does:'Rådgiver om komponenter, state og ydeevne — uden at røre dit design uden accept.',
+    resp:['Reviewer komponentstruktur','Foreslår ydeevneforbedringer','Respekterer dit design'],
+    mandate:'Anbefaler; ændrer aldrig noget selv.',
+    can:'Reviewe og anbefale', cant:'Udføre ændringer'},
+
+  {grp:'guru',badge:'Guru',bc:'b-guru',color:'#1E6F57',ic:I.robot,
+    nm:'AI / Gemini',dm:'Modellag',
+    does:'Rådgiver om prompts, response-schema, model-routing og fallback.',
+    resp:['Reviewer prompt-kvalitet','Foreslår schema/routing','Vurderer fallback-adfærd'],
+    mandate:'Anbefaler; ændrer aldrig noget selv.',
+    can:'Reviewe og anbefale', cant:'Udføre ændringer'},
+
+  {grp:'guru',badge:'Guru',bc:'b-guru',color:'#1E6F57',ic:I.lock,
+    nm:'Security',dm:'Sikkerhed',
+    does:'Rådgiver om secrets, nøglerotation og service_role-isolation.',
+    resp:['Reviewer secret-håndtering','Foreslår nøglerotation','Vurderer adgangsmodel'],
+    mandate:'Anbefaler; ændrer aldrig noget selv.',
+    can:'Reviewe og anbefale', cant:'Udføre ændringer'},
+
+  {grp:'guru',badge:'Guru',bc:'b-guru',color:'#1E6F57',ic:I.ux,
+    nm:'UX / Konvertering',dm:'Flow',
+    does:'Rådgiver om onboarding, demo-til-pilot og investor-flow.',
+    resp:['Reviewer brugerflow','Foreslår konverteringsforbedringer','Respekterer dit design'],
+    mandate:'Anbefaler; ændrer aldrig noget selv.',
+    can:'Reviewe og anbefale', cant:'Udføre ændringer'},
+
+  {grp:'guru',badge:'Guru',bc:'b-guru',color:'#1E6F57',ic:I.chart,
+    nm:'Data / Analytics',dm:'Indsigt',
+    does:'Rådgiver om KPI’er, EPR-metrics og partner-dashboards.',
+    resp:['Reviewer datamodel for indsigt','Foreslår KPI’er og metrics','Vurderer dashboard-behov'],
+    mandate:'Anbefaler; ændrer aldrig noget selv.',
+    can:'Reviewe og anbefale', cant:'Udføre ændringer'},
+];
+
+let filter='all', query='';
+const counts = {all:TEAM.length, orchestrator:TEAM.filter(t=>t.grp==='orchestrator').length,
+  master:TEAM.filter(t=>t.grp==='master').length, guru:TEAM.filter(t=>t.grp==='guru').length};
+const TABDEF=[['all','Alle'],['orchestrator','Orchestrator'],['master','Masters'],['guru','Gurus']];
+
+const tabsEl=document.getElementById('tabs');
+TABDEF.forEach(([k,label])=>{
+  const b=document.createElement('button');
+  b.className='tab'+(k==='all'?' on':'');
+  b.dataset.k=k;
+  b.innerHTML=label+' <span class="n">'+counts[k]+'</span>';
+  b.onclick=()=>{filter=k;[...tabsEl.children].forEach(c=>c.classList.toggle('on',c.dataset.k===k));render();};
+  tabsEl.appendChild(b);
+});
+document.getElementById('q').addEventListener('input',e=>{query=e.target.value.toLowerCase();render();});
+
+const grid=document.getElementById('grid');
+function render(){
+  grid.innerHTML='';
+  TEAM.filter(t=>(filter==='all'||t.grp===filter)
+    && (!query || (t.nm+' '+t.dm+' '+t.does).toLowerCase().includes(query)))
+    .forEach(t=>{
+      const c=document.createElement('div'); c.className='card';
+      c.innerHTML=`
+        <div class="ctop">
+          <div class="ic" style="background:${t.color}"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${t.ic}</svg></div>
+          <div class="ctitle"><div class="nm">${t.nm}</div><div class="dm">${t.dm}</div></div>
+          <span class="badge ${t.bc}">${t.badge}</span>
+        </div>
+        <div class="does">${t.does}</div>
+        <div class="more"><div class="more-inner">
+          <div class="sec">Ansvar</div>
+          <ul>${t.resp.map(r=>`<li>${r}</li>`).join('')}</ul>
+          <div class="sec">Mandat</div>
+          <div class="mandate">${t.mandate}</div>
+          <div class="canrow can"><span class="lab">Må</span><span>${t.can}</span></div>
+          <div class="canrow cant"><span class="lab">Må ikke</span><span>${t.cant}</span></div>
+        </div></div>
+        <div class="chev">Detaljer <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>`;
+      c.onclick=()=>c.classList.toggle('open');
+      grid.appendChild(c);
+    });
+  if(!grid.children.length) grid.innerHTML='<div style="color:var(--muted);font-size:14px;padding:20px">Ingen match.</div>';
+}
+render();
+</script>
+</body>
+</html>

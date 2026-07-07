@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity validation helper
+    function isValidUserProfile(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.fullName is string && data.fullName.size() <= 200 &&
+             data.email is string && data.email.size() <= 200 &&
+             (!data.keys().hasAny(['municipality']) || data.municipality is string) &&
+             (!data.keys().hasAny(['balance']) || data.balance is number) &&
+             (!data.keys().hasAny(['points']) || data.points is number) &&
+             (!data.keys().hasAny(['scansCount']) || data.scansCount is number) &&
+             (!data.keys().hasAny(['co2SavedKg']) || data.co2SavedKg is number) &&
+             (!data.keys().hasAny(['streakDays']) || data.streakDays is number) &&
+             (!data.keys().hasAny(['level']) || data.level is number) &&
+             (!data.keys().hasAny(['memberStatus']) || data.memberStatus is string);
+    }
+
+    // Match users/{userId}
+    match /users/{userId} {
+      allow list: if isSignedIn();
+      allow get: if isSignedIn();
+      allow create: if isOwner(userId) && isValidUserProfile(incoming());
+      allow update: if isOwner(userId) && isValidUserProfile(incoming()) && (
+        // Ensure immutable values
+        incoming().id == existing().id &&
+        incoming().email == existing().email
+      );
+      allow delete: if false;
+    }
+  }
+}
