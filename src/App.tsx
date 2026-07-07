@@ -8,10 +8,11 @@ import ProfilTab from './components/ProfilTab';
 import SystemsTab from './components/SystemsTab';
 import AdminPanel from './components/AdminPanel';
 import RewardsTab from './components/RewardsTab';
+import LeaderboardTab from './components/LeaderboardTab';
 import B2BPartnerDashboard from './components/B2BPartnerDashboard';
 import BiometricPrompt from './components/BiometricPrompt';
 import {
-  Camera, Wallet, User, Globe, HelpCircle, ShieldCheck, Landmark, Building2, ShieldAlert, Gift,
+  Camera, Wallet, User, Globe, HelpCircle, ShieldCheck, Landmark, Building2, ShieldAlert, Gift, Trophy,
   Bell, MapPin, Trash2, Smartphone, AlertTriangle, Clock
 } from 'lucide-react';
 import { useLanguage } from './lib/i18n';
@@ -20,7 +21,7 @@ import { triggerHaptic, HapticPattern } from './lib/haptics';
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [tab, setTab] = useState<'scan' | 'wallet' | 'profil' | 'systems' | 'admin' | 'rewards'>('scan');
+  const [tab, setTab] = useState<'scan' | 'wallet' | 'profil' | 'systems' | 'admin' | 'rewards' | 'leaderboard'>('scan');
   type ViewMode = 'citizen' | 'b2b_business' | 'b2b_kommune';
   const availableModes = useMemo<ViewMode[]>(() => {
     if (!user) return ['citizen'];
@@ -490,6 +491,9 @@ export default function App() {
                 {tab === 'rewards' && (
                   <RewardsTab user={user} onChangeUser={handleUpdateUser} />
                 )}
+                {tab === 'leaderboard' && (
+                  <LeaderboardTab user={user} />
+                )}
               </motion.div>
             </AnimatePresence>
           </div>
@@ -662,6 +666,38 @@ export default function App() {
                 }`}
               >
                 Rewards
+              </motion.span>
+            </motion.button>
+
+            <motion.button
+              id="tab-leaderboard-btn"
+              onClick={() => {
+                triggerHaptic(HapticPattern.LIGHT_TAP);
+                setTab('leaderboard');
+              }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.90 }}
+              transition={{ type: "spring", stiffness: 500, damping: 18 }}
+              className="flex flex-col items-center gap-1 cursor-pointer group shrink-0 focus:outline-none"
+            >
+              <motion.div
+                animate={{ scale: tab === 'leaderboard' ? 1.05 : 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors shadow-sm ${
+                  tab === 'leaderboard'
+                    ? 'bg-primary text-accent'
+                    : 'bg-primary/5 text-primary/60 group-hover:bg-primary/10'
+                }`}
+              >
+                <Trophy className="w-5 h-5 shrink-0 z-10" />
+              </motion.div>
+              <motion.span
+                animate={{ y: tab === 'leaderboard' ? 1 : 0 }}
+                className={`text-[10px] font-black tracking-wider uppercase transition-colors ${
+                  tab === 'leaderboard' ? 'text-primary' : 'text-primary/45'
+                }`}
+              >
+                Rangliste
               </motion.span>
             </motion.button>
 
