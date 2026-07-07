@@ -365,6 +365,14 @@ export default function B2BPartnerDashboard({ user, onChangeUser, portalType = '
   });
   const [tourStep, setTourStep] = useState<number>(0);
 
+  // TRIN 3 hotfix: auto-persistér tour-completion når tour lukkes uanset close-metode
+  // (spring over, afslut, klik udenfor, Esc, portal-skift osv.)
+  useEffect(() => {
+    if (!showTour) {
+      localStorage.setItem('cirkel_b2b_tour_completed', 'true');
+    }
+  }, [showTour]);
+
   const tourSteps = [
     {
       titleDa: "Velkommen til Cirkel Partner Portal! 🎓",

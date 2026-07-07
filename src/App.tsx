@@ -93,6 +93,12 @@ export default function App() {
       try {
         const parsed = JSON.parse(cached);
         if (parsed && parsed.id) {
+          // TRIN 2 migration: sikre kendte demo-bypass-brugere har user_type
+          // (rekonstruerer efter localStorage-cache fra før TRIN 2 rollout)
+          if (!parsed.user_type && parsed.id === 'auth-ma-keap-uid-bypass') {
+            parsed.user_type = 'admin';
+            localStorage.setItem('cirkel_user', JSON.stringify(parsed));
+          }
           setUser(parsed);
         }
       } catch (err) {
@@ -272,7 +278,7 @@ export default function App() {
             onClick={() => {
               triggerHaptic(HapticPattern.LIGHT_TAP);
               setViewMode('b2b_business');
-              showToast('Skiftede til B2B Erhverv-Portal!', 'success');
+              showToast('Skiftede til B2B Erhverv-Portal!', 'info');
             }}
             className={`flex-1 md:flex-none text-[10px] font-black uppercase tracking-wider py-2 px-4 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               viewMode === 'b2b_business'
@@ -288,7 +294,7 @@ export default function App() {
             onClick={() => {
               triggerHaptic(HapticPattern.LIGHT_TAP);
               setViewMode('b2b_kommune');
-              showToast('Skiftede til Kommune-Portal!', 'success');
+              showToast('Skiftede til Kommune-Portal!', 'info');
             }}
             className={`flex-1 md:flex-none text-[10px] font-black uppercase tracking-wider py-2 px-4 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
               viewMode === 'b2b_kommune'
