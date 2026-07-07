@@ -201,6 +201,7 @@ import EnterpriseCrmCirkelModal from './EnterpriseCrmCirkelModal';
 interface B2BPartnerDashboardProps {
   user: any;
   onChangeUser: (updates: any) => void;
+  portalType?: 'business' | 'kommune';
 }
 
 // Interactive Custom Tooltip for Circular Recovery & CO2 Trend
@@ -345,7 +346,7 @@ const EsgBenchmarkingCustomTooltip = ({ active, payload, language }: any) => {
   return null;
 };
 
-export default function B2BPartnerDashboard({ user, onChangeUser }: B2BPartnerDashboardProps) {
+export default function B2BPartnerDashboard({ user, onChangeUser, portalType = 'business' }: B2BPartnerDashboardProps) {
   const { t, language } = useLanguage();
   const isDa = language === 'da';
   const [activeTab, setActiveTab ] = useState<'overview' | 'muni' | 'provider' | 'map' | 'integrations' | 'esg' | 'campaigns'>('overview');
@@ -394,6 +395,27 @@ export default function B2BPartnerDashboard({ user, onChangeUser }: B2BPartnerDa
       tab: "integrations"
     }
   ];
+
+  // TRIN 3 — feature-flag: hvis portalType's custom_content = true, vis placeholder-slot
+  const [useCustomContent, setUseCustomContent] = useState(false);
+  const [flagLoaded, setFlagLoaded] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/portal-features')
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive) return;
+        if (j?.success && j?.features) {
+          const flag = portalType === 'kommune'
+            ? j.features.kommune_custom_content
+            : j.features.business_custom_content;
+          setUseCustomContent(!!flag);
+        }
+        setFlagLoaded(true);
+      })
+      .catch(() => { if (alive) setFlagLoaded(true); });
+    return () => { alive = false; };
+  }, [portalType]);
 
   useEffect(() => {
     if (showTour) {
@@ -1676,9 +1698,48 @@ export default function B2BPartnerDashboard({ user, onChangeUser }: B2BPartnerDa
     { name: 'Glas', value: 10, color: '#10B981' }
   ];
 
+  // TRIN 3 — placeholder-slot når custom_content aktiveres (indhold bygges separat)
+  if (flagLoaded && useCustomContent) {
+    return (
+      <div className="bg-[#FAF9F5] min-h-screen flex flex-col items-center justify-center p-8 relative">
+        <div
+          className="absolute top-3 right-3 z-40 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md pointer-events-none"
+          style={{
+            background: portalType === 'kommune' ? 'rgba(5, 54, 27, 0.92)' : 'rgba(133, 169, 18, 0.92)',
+            color: '#ffffff',
+          }}
+        >
+          {portalType === 'kommune' ? '🏛️ Kommune Portal' : '💼 Erhverv Portal'}
+        </div>
+        <div className="max-w-md text-center bg-white border border-gray-200 rounded-3xl p-8 shadow-lg">
+          <span className="text-5xl">{portalType === 'kommune' ? '🏛️' : '💼'}</span>
+          <h2 className="text-lg font-black mt-4" style={{ color: '#05361B' }}>
+            {portalType === 'kommune'
+              ? 'Kommune-specifikt indhold aktiveres her'
+              : 'Erhverv-specifikt indhold aktiveres her'}
+          </h2>
+          <p className="text-xs font-semibold mt-3 leading-normal" style={{ color: '#6E6E6E' }}>
+            Feature-flag er aktiveret. Reel content-adskillelse bygges i en separat opgave.
+            Slå toggle fra i Admin-panelet for at gå tilbage til fælles dashboard.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-[#FAF9F5] min-h-screen text-[#111111] font-sans antialiased flex flex-col md:flex-row border-t border-gray-200">
-      
+    <div className="bg-[#FAF9F5] min-h-screen text-[#111111] font-sans antialiased flex flex-col md:flex-row border-t border-gray-200 relative">
+      {/* TRIN 3 portal-badge — synlig indikator (Erhverv vs Kommune) */}
+      <div
+        className="absolute top-3 right-3 z-40 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-md pointer-events-none"
+        style={{
+          background: portalType === 'kommune' ? 'rgba(5, 54, 27, 0.92)' : 'rgba(133, 169, 18, 0.92)',
+          color: '#ffffff',
+        }}
+      >
+        {portalType === 'kommune' ? '🏛️ Kommune Portal' : '💼 Erhverv Portal'}
+      </div>
+
       {/* 1. SIDE NAVIGATION RAIL */}
       <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-gray-200 p-5 flex flex-col justify-between shrink-0 text-left">
         <div>

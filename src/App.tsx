@@ -6,10 +6,11 @@ import ScanTab from './components/ScanTab';
 import WalletTab from './components/WalletTab';
 import ProfilTab from './components/ProfilTab';
 import SystemsTab from './components/SystemsTab';
+import AdminPanel from './components/AdminPanel';
 import B2BPartnerDashboard from './components/B2BPartnerDashboard';
 import BiometricPrompt from './components/BiometricPrompt';
-import { 
-  Camera, Wallet, User, Globe, HelpCircle, ShieldCheck, Landmark, Building2,
+import {
+  Camera, Wallet, User, Globe, HelpCircle, ShieldCheck, Landmark, Building2, ShieldAlert,
   Bell, MapPin, Trash2, Smartphone, AlertTriangle, Clock
 } from 'lucide-react';
 import { useLanguage } from './lib/i18n';
@@ -18,7 +19,7 @@ import { triggerHaptic, HapticPattern } from './lib/haptics';
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [tab, setTab] = useState<'scan' | 'wallet' | 'profil' | 'systems'>('scan');
+  const [tab, setTab] = useState<'scan' | 'wallet' | 'profil' | 'systems' | 'admin'>('scan');
   type ViewMode = 'citizen' | 'b2b_business' | 'b2b_kommune';
   const availableModes = useMemo<ViewMode[]>(() => {
     if (!user) return ['citizen'];
@@ -302,10 +303,15 @@ export default function App() {
         )}
       </div>
 
-      {viewMode !== 'citizen' ? (
-        /* Widescreen Desktop-grade B2B Partner Portal */
+      {viewMode === 'b2b_business' ? (
+        /* Widescreen — B2B Erhverv-Portal (producenter, brands) */
         <div className="w-full max-w-6xl bg-white border border-gray-200 md:rounded-[2rem] md:shadow-2xl overflow-hidden min-h-[750px] animate-in fade-in duration-300">
-          <B2BPartnerDashboard user={user} onChangeUser={handleUpdateUser} />
+          <B2BPartnerDashboard user={user} onChangeUser={handleUpdateUser} portalType="business" />
+        </div>
+      ) : viewMode === 'b2b_kommune' ? (
+        /* Widescreen — Kommune-Portal (kommunemedarbejdere) */
+        <div className="w-full max-w-6xl bg-white border border-gray-200 md:rounded-[2rem] md:shadow-2xl overflow-hidden min-h-[750px] animate-in fade-in duration-300">
+          <B2BPartnerDashboard user={user} onChangeUser={handleUpdateUser} portalType="kommune" />
         </div>
       ) : (
         /* simulated mobile preview card to make the applet feel incredibly organic and polished */
@@ -466,10 +472,13 @@ export default function App() {
                   />
                 )}
                 {tab === 'systems' && (
-                  <SystemsTab 
-                    user={user} 
-                    onChangeUser={handleUpdateUser} 
+                  <SystemsTab
+                    user={user}
+                    onChangeUser={handleUpdateUser}
                   />
+                )}
+                {tab === 'admin' && user.user_type === 'admin' && (
+                  <AdminPanel user={user} />
                 )}
               </motion.div>
             </AnimatePresence>
@@ -613,6 +622,40 @@ export default function App() {
                 {t('tab_systems')}
               </motion.span>
             </motion.button>
+
+            {user.user_type === 'admin' && (
+              <motion.button
+                id="tab-admin-btn"
+                onClick={() => {
+                  triggerHaptic(HapticPattern.LIGHT_TAP);
+                  setTab('admin');
+                }}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.90 }}
+                transition={{ type: "spring", stiffness: 500, damping: 18 }}
+                className="flex flex-col items-center gap-1 cursor-pointer group shrink-0 focus:outline-none"
+              >
+                <motion.div
+                  animate={{ scale: tab === 'admin' ? 1.05 : 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors shadow-sm ${
+                    tab === 'admin'
+                      ? 'bg-primary text-accent'
+                      : 'bg-primary/5 text-primary/60 group-hover:bg-primary/10'
+                  }`}
+                >
+                  <ShieldAlert className="w-5 h-5 shrink-0 z-10" />
+                </motion.div>
+                <motion.span
+                  animate={{ y: tab === 'admin' ? 1 : 0 }}
+                  className={`text-[10px] font-black tracking-wider uppercase transition-colors ${
+                    tab === 'admin' ? 'text-primary' : 'text-primary/45'
+                  }`}
+                >
+                  Admin
+                </motion.span>
+              </motion.button>
+            )}
 
           </nav>
 
