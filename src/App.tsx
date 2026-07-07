@@ -7,10 +7,11 @@ import WalletTab from './components/WalletTab';
 import ProfilTab from './components/ProfilTab';
 import SystemsTab from './components/SystemsTab';
 import AdminPanel from './components/AdminPanel';
+import RewardsTab from './components/RewardsTab';
 import B2BPartnerDashboard from './components/B2BPartnerDashboard';
 import BiometricPrompt from './components/BiometricPrompt';
 import {
-  Camera, Wallet, User, Globe, HelpCircle, ShieldCheck, Landmark, Building2, ShieldAlert,
+  Camera, Wallet, User, Globe, HelpCircle, ShieldCheck, Landmark, Building2, ShieldAlert, Gift,
   Bell, MapPin, Trash2, Smartphone, AlertTriangle, Clock
 } from 'lucide-react';
 import { useLanguage } from './lib/i18n';
@@ -19,7 +20,7 @@ import { triggerHaptic, HapticPattern } from './lib/haptics';
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [tab, setTab] = useState<'scan' | 'wallet' | 'profil' | 'systems' | 'admin'>('scan');
+  const [tab, setTab] = useState<'scan' | 'wallet' | 'profil' | 'systems' | 'admin' | 'rewards'>('scan');
   type ViewMode = 'citizen' | 'b2b_business' | 'b2b_kommune';
   const availableModes = useMemo<ViewMode[]>(() => {
     if (!user) return ['citizen'];
@@ -486,6 +487,9 @@ export default function App() {
                 {tab === 'admin' && user.user_type === 'admin' && (
                   <AdminPanel user={user} />
                 )}
+                {tab === 'rewards' && (
+                  <RewardsTab user={user} onChangeUser={handleUpdateUser} />
+                )}
               </motion.div>
             </AnimatePresence>
           </div>
@@ -626,6 +630,38 @@ export default function App() {
                 }`}
               >
                 {t('tab_systems')}
+              </motion.span>
+            </motion.button>
+
+            <motion.button
+              id="tab-rewards-btn"
+              onClick={() => {
+                triggerHaptic(HapticPattern.LIGHT_TAP);
+                setTab('rewards');
+              }}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.90 }}
+              transition={{ type: "spring", stiffness: 500, damping: 18 }}
+              className="flex flex-col items-center gap-1 cursor-pointer group shrink-0 focus:outline-none"
+            >
+              <motion.div
+                animate={{ scale: tab === 'rewards' ? 1.05 : 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors shadow-sm ${
+                  tab === 'rewards'
+                    ? 'bg-primary text-accent'
+                    : 'bg-primary/5 text-primary/60 group-hover:bg-primary/10'
+                }`}
+              >
+                <Gift className="w-5 h-5 shrink-0 z-10" />
+              </motion.div>
+              <motion.span
+                animate={{ y: tab === 'rewards' ? 1 : 0 }}
+                className={`text-[10px] font-black tracking-wider uppercase transition-colors ${
+                  tab === 'rewards' ? 'text-primary' : 'text-primary/45'
+                }`}
+              >
+                Rewards
               </motion.span>
             </motion.button>
 
