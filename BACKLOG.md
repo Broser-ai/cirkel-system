@@ -8,6 +8,37 @@ ovenfra og ned med `/build-feature <id>`, altid med din accept og preview først
 
 ---
 
+## Implementeringsstatus (opdateret 2026-07-12 via automatisk audit)
+
+Sammenholder BACKLOG-planen med **faktisk filsystem-tilstand** i `cirkel-system/`.
+Baseret på lokal filsystem-scan, ikke antagelser. Fuld rapport: `PROJECT_STATUS.md`.
+
+**Overordnet vurdering:**
+- ✅ **EPIC 0 (Fundament)** — 100% implementeret og verificeret live (kerne-loop bevist 2026-07-06)
+- ✅ **EPIC 1 (23 moduler)** — CirkelEngine kører i `modules/` (26 filer), wired ind via `api/_rules.ts` som F1.10
+- 🟡 **EPIC 2 (Loyalitet)** — F2.1–F2.5 REAL/wired (rewards, redemptions, achievements, leaderboard-tabeller + endpoints + UI). F2.6 (brand-kampagne-builder) ikke påbegyndt
+- 🟡 **EPIC 3 (Anti-fraud)** — Kun F3.6 (write-once ledger) delvist implementeret via `supabase_schema.sql` ledger-policies. F3.1–F3.5, F3.7 ikke fundet i kildekoden. F3.8 (server-side token-verify) har plan i `docs/F3.8-server-side-auth.md`, ikke implementeret endnu
+- 🟡 **EPIC 4 (Materialepas + kobling)** — F4.2 fuldt implementeret (DAWA + 15 kommuner). F4.1 (GS1/GTIN) ikke fundet som ægte integration. F4.3, F4.4 ikke påbegyndt
+- 🔴 **EPIC 5 (Edge AI/vision)** — Ingen filer fundet. Alt SCAFFOLD/PLAN som markeret
+- 🟡 **EPIC 6 (B2B/EPR/CSRD)** — `B2BPartnerDashboard.tsx` (419 KB) implementerer UI med hardkodet mock-data. Ingen Stripe (F6.2), ingen ægte CSRD-datakobling (F6.3). Portal-adskillelse er implementeret (TRIN 3)
+- 🟡 **EPIC 7 (Automatisering)** — Ingen n8n, Discord, React Native, IoT-kode fundet. Intet påbegyndt af F7.1–F7.5
+- 🟢 **EPIC 8 (MONSTER autonomien)** — Adskilt Python-system, ikke i webappen (som noteret)
+- ✅ **EPIC 9 (AI-team)** — 22 aktive agenter i `.claude/agents/`, 5 parkerede (guru-security, guru-react-frontend, guru-architect-dataflow, guru-invention-chief, rocket-kernel). Match med BACKLOG
+
+**Nye ting bygget SIDEN BACKLOG blev skrevet (ikke i BACKLOG):**
+- TRIN 2 rolle-gate: `profiles.user_type` + `availableModes` + demo-bypass-migration
+- TRIN 3 portal-struktur: `viewMode` split til `b2b_business` / `b2b_kommune` + badge
+- TRIN 3 admin feature-flags: `portal_features`-tabel + `set_portal_features` RPC + `AdminPanel.tsx`
+- Firebase-bro: `resolve_profile()` + `process_scan(p_firebase_uid, ...)` — teknisk fundament der bruges af flere features
+
+**Sikkerheds-oprydning (øverst i BACKLOG):**
+- 🟡 `docs/CIRKEL-EVERYTHING-v3.md` er tilføjet med `(secret-redacted)`-note — behov for verifikation
+- 🟡 Firebase-nøgle-rotation-plan findes i `docs/rotation-firebase-apikey.md` — ikke udført
+
+---
+
+---
+
 ## EPIC 0 — Fundament (LIVE)
 | ID | Funktion | Status | Kilde |
 |----|----------|--------|-------|
