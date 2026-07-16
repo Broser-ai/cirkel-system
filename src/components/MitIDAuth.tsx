@@ -94,7 +94,7 @@ export default function MitIDAuth({ onSuccess, onCancel }: MitIDAuthProps) {
         addLog(`[MitID Portal] Request received from Cirkel. Awaiting signature validation on secure physical authenticator key...`);
       }
       if (curr === 80) {
-        addLog(`[MitID Portal] Signature validated successfully for Dane-id: CPR-140683-XXXX.`);
+        addLog(`[MitID Portal] Signature validated successfully.`);
       }
 
       if (curr >= 100) {

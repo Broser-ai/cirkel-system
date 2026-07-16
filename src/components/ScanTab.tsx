@@ -9,6 +9,8 @@ import WasteBinLocator from './WasteBinLocator';
 import { useLanguage } from '../lib/i18n';
 import { triggerHaptic, HapticPattern } from '../lib/haptics';
 import { getKommuneFromCoords } from '../lib/dawa';
+// Integration-Audit #2 (accepteret 2026-07-16): dynamisk pant-sats via useDynamicDeposit
+import { useDynamicDeposit } from '../hooks/useDynamicDeposit';
 
 interface ScanTabProps {
   user: UserProfile;
@@ -717,6 +719,8 @@ const getARComponents = (productName: string, materialType: string): ARComponent
 };
 
 export default function ScanTab({ user, onChangeUser, bal, onShowToast }: ScanTabProps) {
+  // Integration-Audit #2: PID-kalibreret pant fra api/deposit, fallback til "0,20"
+  const dynamicDeposit = useDynamicDeposit();
   const { t, language } = useLanguage();
   const [phase, setPhase] = useState<'ready' | 'loading' | 'result'>('ready');
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
@@ -1235,7 +1239,7 @@ export default function ScanTab({ user, onChangeUser, bal, onShowToast }: ScanTa
           co2Saved: "35g",
           waterSaved: "0.9L",
           energySaved: "0.6kWh",
-          pantValue: "0.20",
+          pantValue: dynamicDeposit.amount_dkk, // Integration-Audit #2: PID-kalibreret
           materialType: "Polyethylen (HDPE)",
           recyclablePercent: "95%",
           manufacturer: "Generisk producent",
