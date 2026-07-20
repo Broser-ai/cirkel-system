@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
+import {
   MapPin, Compass, Navigation, Clock, Check, Info, ExternalLink, ArrowRight, Trash2,
-  Camera, MessageSquare, AlertTriangle, Send, ThumbsUp, Plus, X, Eye, ThumbsDown
+  Camera, MessageSquare, AlertTriangle, Send, ThumbsUp, Plus, X, Eye, ThumbsDown,
+  Sparkles
 } from 'lucide-react';
+
+interface NudgeState {
+  best_container_id: string;
+  best_container_name?: string;
+  best_container_address?: string;
+  bonus_ore?: number;
+  bonus_reason?: string;
+}
 
 interface FeedbackEntry {
   id: string;
@@ -327,6 +336,26 @@ export default function RecyclingCenterMap() {
   const [activeTab, setActiveTab ] = useState<'list' | 'map'>('list');
   const [filterType, setFilterType] = useState<'all' | 'station' | 'smartbin'>('all');
 
+  // Modul 13 Smart Nudging — /api/nudge banner
+  const [nudge, setNudge] = useState<NudgeState | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/nudge?region=aarhus-c')
+      .then(r => r.ok ? r.json() : null)
+      .then((data: any) => {
+        if (cancelled || !data?.best_container_id) return;
+        setNudge({
+          best_container_id: data.best_container_id,
+          best_container_name: data.best_container_name,
+          best_container_address: data.best_container_address,
+          bonus_ore: data.bonus_ore,
+          bonus_reason: data.bonus_reason,
+        });
+      })
+      .catch(() => { /* silent — nudge er cherry-on-top */ });
+    return () => { cancelled = true; };
+  }, []);
+
   // Detail view nested sub tab: Details info vs Community contribution
   const [detailSubTab, setDetailSubTab] = useState<'info' | 'community'>('info');
   const [showReportForm, setShowReportForm] = useState(false);
@@ -518,6 +547,32 @@ export default function RecyclingCenterMap() {
 
   return (
     <div className="bg-white border border-gray-200 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+      {/* Modul 13 Smart Nudging banner — vises kun hvis /api/nudge returnerede en hot bin */}
+      {nudge && nudge.best_container_name && (
+        <div className="bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 border border-emerald-500/30 rounded-2xl p-3 flex items-center gap-3">
+          <span className="p-1.5 bg-emerald-500/20 rounded-lg shrink-0">
+            <Sparkles className="w-4 h-4 text-emerald-700" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-xs font-black text-emerald-800 uppercase tracking-wider">
+                {nudge.best_container_name}
+              </span>
+              {typeof nudge.bonus_ore === 'number' && nudge.bonus_ore > 0 && (
+                <span className="text-[10px] font-black bg-emerald-600 text-white px-1.5 py-0.5 rounded-md">
+                  +{nudge.bonus_ore} øre bonus
+                </span>
+              )}
+            </div>
+            {nudge.bonus_reason && (
+              <p className="text-[10.5px] text-emerald-900/80 font-semibold mt-0.5 leading-tight">
+                {nudge.bonus_reason}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header section with Location permission trigger */}
       <div className="flex flex-col gap-2">
         <div className="flex justify-between items-center">

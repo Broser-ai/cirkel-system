@@ -6,7 +6,9 @@
 //
 // SIKKERHED: ROBOFLOW_API_KEY er server-side kun. Klient kan aldrig se den.
 
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+// Bruger `any` for req/res-typer (samme pattern som api/scan.ts) for at undgå
+// hård afhængighed af `@vercel/node` typerne (som ikke er en dependency her).
+// Vercel Node-runtime accepterer stadig disse signaturer 1:1.
 
 const ROBOFLOW_WORKSPACE = process.env.ROBOFLOW_WORKSPACE || 'michaels-workspace-ccviv';
 const ROBOFLOW_WORKFLOW_ID = process.env.ROBOFLOW_WORKFLOW_ID
@@ -19,7 +21,7 @@ interface WorkflowInput {
   gemini_confidence?: number;
 }
 
-interface NormalizedResponse {
+export interface NormalizedResponse {
   material_type: string;
   material_confidence: number;
   quantity_kg_estimate: number | null;
@@ -56,7 +58,7 @@ function deepFind(obj: any, keys: string[], depth = 0): any {
   return undefined;
 }
 
-function stubResponse(): NormalizedResponse {
+export function stubResponse(): NormalizedResponse {
   return {
     material_type: 'UNKNOWN',
     material_confidence: 0,
@@ -68,7 +70,7 @@ function stubResponse(): NormalizedResponse {
   };
 }
 
-async function callWorkflow(imageB64: string, apiKey: string): Promise<NormalizedResponse> {
+export async function callWorkflow(imageB64: string, apiKey: string): Promise<NormalizedResponse> {
   const url = `https://serverless.roboflow.com/infer/workflows/${ROBOFLOW_WORKSPACE}/${ROBOFLOW_WORKFLOW_ID}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ROBOFLOW_TIMEOUT_MS);
@@ -112,7 +114,7 @@ async function callWorkflow(imageB64: string, apiKey: string): Promise<Normalize
   }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
   const body = req.body as Partial<WorkflowInput>;

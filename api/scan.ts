@@ -5,6 +5,7 @@ import { getClaude, claudeJSON } from "./_claude.js";
 import { providerOrder } from "./_ai.js";
 import { runRules } from "./_rules.js";
 import { processScan } from "../lib/cirkel.js";
+import { callWorkflow as callRoboflowWorkflow, stubResponse as roboflowStub } from "./roboflow-fallback.js";
 
 // F1.11 — Supabase server-side klient (service-role; KUN server, aldrig VITE_).
 // Lazy init for at undgå crash i mock/lokal hvor env ikke er sat.
@@ -205,10 +206,49 @@ Du skal levere følgende felter i JSON:
     return await runRules({ productName, weight_grams, municipality: targetMunicipality });
   }
 
+  // Integration-Audit #4: hvis Gemini eller Claude leverede et svar med lav
+  // signal (kritiske felter mangler eller "Ukendt" materiale), prøver vi
+  // Michaels Roboflow-workflow som fallback INDEN vi falder til mock.
+  function looksWeak(data: any): boolean {
+    if (!data) return true;
+    const mat = String(data.materialType ?? data.materialShort ?? '').toLowerCase();
+    if (mat.includes('ukendt') || mat.length === 0) return true;
+    const pantN = parseFloat(String(data.pantValue ?? '').replace(',', '.'));
+    if (!isFinite(pantN) || pantN <= 0) return true;
+    return false;
+  }
+
+  async function respondWithRoboflowRescueOrOriginal(originalData: any) {
+    if (!image || !looksWeak(originalData)) {
+      return await respond(originalData);
+    }
+    const apiKey = process.env.ROBOFLOW_API_KEY;
+    if (!apiKey) return await respond(originalData);
+    try {
+      const rf = await callRoboflowWorkflow(image, apiKey);
+      if (rf.material_confidence >= 0.70 && rf.material_type && rf.material_type !== 'UNKNOWN') {
+        // Merge Roboflow-svar oven på original: behold felter Roboflow ikke leverer,
+        // men opgrader materialeklassifikationen.
+        const merged = {
+          ...originalData,
+          materialType: rf.material_type,
+          materialShort: `${rf.material_type} · Roboflow-fallback`,
+          circularScore: originalData?.circularScore ?? '90',
+          _roboflow_fallback_used: true,
+          _roboflow_confidence: rf.material_confidence,
+        };
+        return await respond(merged);
+      }
+    } catch (err: any) {
+      console.error('[scan] Roboflow-fallback fejlede:', err?.message ?? err);
+    }
+    return await respond(originalData);
+  }
+
   for (const p of providerOrder()) {
     try {
-      if (p === "gemini") return await respond(await viaGemini());
-      if (p === "claude") return await respond(await viaClaude());
+      if (p === "gemini") return await respondWithRoboflowRescueOrOriginal(await viaGemini());
+      if (p === "claude") return await respondWithRoboflowRescueOrOriginal(await viaClaude());
       if (p === "rules") {
         const rules = await viaRules();
         if (rules) return await respond(rules);
@@ -218,6 +258,30 @@ Du skal levere følgende felter i JSON:
       console.error(`Scan via ${p} fejlede:`, error?.message);
     }
   }
+
+  // Ingen provider succes'ede → prøv Roboflow direkte hvis vi har billede
+  if (image && process.env.ROBOFLOW_API_KEY) {
+    try {
+      const rf = await callRoboflowWorkflow(image, process.env.ROBOFLOW_API_KEY);
+      if (rf.material_confidence >= 0.60 && rf.material_type !== 'UNKNOWN') {
+        const rescued = {
+          ...mock,
+          materialType: rf.material_type,
+          materialShort: `${rf.material_type} · Roboflow`,
+          _roboflow_only: true,
+          _roboflow_confidence: rf.material_confidence,
+        };
+        return await respond(rescued);
+      }
+    } catch (err: any) {
+      console.error('[scan] Roboflow direct-fallback fejlede:', err?.message ?? err);
+    }
+  }
+
   // Ingen motor tilgængelig/lykkedes → din mock (bevarer offline-adfærd).
   return await respond(mock);
 }
+
+// Suppress unused-import warning: roboflowStub reserveres til Fase 2 där vi
+// eksporterer stub-svar tilbage til klienten uden at gøre live-kald.
+void roboflowStub;

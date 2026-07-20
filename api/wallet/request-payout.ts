@@ -21,6 +21,10 @@ import { verifySession, readCookieFromHeader } from '../../src/lib/session';
 const MIN_PAYOUT_ORE = 100;   // 1 DKK
 const MAX_PAYOUT_ORE = 50_000; // 500 DKK per request (Fase 1 loft)
 
+// JUDGE-02 opgradering: brug Confidential Payout RPC (Modul 45)
+// hvis USE_CONFIDENTIAL_PAYOUT=1 er sat.
+const USE_CONFIDENTIAL_PAYOUT = process.env.USE_CONFIDENTIAL_PAYOUT === '1';
+
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -67,6 +71,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!supabase) return res.status(503).json({ error: 'db_unavailable' });
 
   const hashBytea = `\\x${session.sub_hash}`;
+  const ip_hash = hashIp(req.headers['x-forwarded-for'] ?? req.socket?.remoteAddress);
+  const user_agent_hash = hashUa(req.headers['user-agent']);
+
+  // JUDGE-02 Confidential Payout: atomisk RPC der verificerer ZK-proof kæde
+  if (USE_CONFIDENTIAL_PAYOUT) {
+    try {
+      const { data, error } = await supabase.rpc('request_payout_confidential', {
+        p_mitid_hash: hashBytea,
+        p_amount_ore: amount_ore,
+        p_method: method,
+        p_ip_hash: ip_hash,
+        p_ua_hash: user_agent_hash,
+      });
+      if (error) {
+        const msg = error.message ?? 'unknown';
+        if (msg.includes('rate_limited')) return res.status(429).json({ error: 'rate_limited' });
+        if (msg.includes('insufficient_balance')) return res.status(400).json({ error: 'insufficient_balance' });
+        if (msg.includes('insufficient_verified_balance')) {
+          return res.status(400).json({
+            error: 'insufficient_verified_balance',
+            message: 'Ikke nok scans med ZK-proof til at dække udbetalingen.',
+          });
+        }
+        if (msg.includes('amount_below_minimum')) return res.status(400).json({ error: 'invalid_amount' });
+        if (msg.includes('amount_above_maximum')) return res.status(400).json({ error: 'invalid_amount' });
+        console.error('[request-payout] confidential RPC fejlede:', msg);
+        return res.status(500).json({ error: 'confidential_rpc_failed' });
+      }
+      const row = Array.isArray(data) ? data[0] : data;
+      return res.status(200).json({
+        ok: true,
+        reference: row.reference,
+        amount_ore: row.amount_ore,
+        amount_dkk: `${Math.floor(row.amount_ore / 100)},${String(row.amount_ore % 100).padStart(2, '0')} DKK`,
+        status: row.status,
+        requested_at: row.requested_at,
+        proof_verified: row.proof_verified,
+        confidential_mode: true,
+        estimated_settlement: 'næste hverdag',
+      });
+    } catch (err: any) {
+      console.error('[request-payout] confidential exception:', err?.message ?? err);
+      return res.status(500).json({ error: 'internal_error' });
+    }
+  }
 
   try {
     // Rate-limit via RPC
@@ -126,8 +175,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const reference = generateReference();
-    const ip_hash = hashIp(req.headers['x-forwarded-for'] ?? req.socket?.remoteAddress);
-    const user_agent_hash = hashUa(req.headers['user-agent']);
 
     // Insert payout_requests
     const { data: payoutRow, error: prError } = await supabase

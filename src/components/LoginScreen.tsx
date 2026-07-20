@@ -7,6 +7,7 @@ import {
 import { logInWithGoogle, logInWithEmail, registerWithEmail, isRealFirebase } from '../lib/firebase';
 import { useLanguage } from '../lib/i18n';
 import MitIDAuth from './MitIDAuth';
+import { useWebAuthn } from '../hooks/useWebAuthn';
 
 interface LoginScreenProps {
   onLogin: (profile: UserProfile) => void;
@@ -30,6 +31,53 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
   // MitID State
   const [isMitIDScanning, setIsMitIDScanning] = useState(false);
+
+  // WebAuthn (Modul 5.1) — ægte FaceID/Fingerprint via passkey
+  const webauthn = useWebAuthn();
+  useEffect(() => {
+    webauthn.checkAvailability().catch(() => { /* stille — falder tilbage til mock */ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleWebAuthnLogin = async () => {
+    try {
+      let result;
+      try {
+        result = await webauthn.authenticate();
+      } catch (authErr: any) {
+        if (String(authErr?.message ?? '').includes('credential_not_registered')) {
+          result = await webauthn.register();
+        } else {
+          throw authErr;
+        }
+      }
+      if (!result?.sub_hash) throw new Error('sub_hash mangler i respons');
+      // Byg profil baseret på sub_hash (samme mock-shape som biometric-flow)
+      const profile: UserProfile = {
+        id: `webauthn-${result.sub_hash.substring(0, 16)}`,
+        fullName: 'Aarhus-borger',
+        email: `${result.sub_hash.substring(0, 12)}@webauthn.cirkel`,
+        isLoggedIn: true,
+        municipality: 'Aarhus Kommune',
+        balance: 0.00,
+        points: 0,
+        scansCount: 0,
+        co2SavedKg: 0.0,
+        streakDays: 0,
+        level: 1,
+        memberStatus: 'Standard-medlem',
+        verificationTier: 'mitid',
+        isMitIDVerified: true,
+      };
+      localStorage.setItem('cirkel_user', JSON.stringify(profile));
+      onLogin(profile);
+    } catch (err: any) {
+      setNotification({
+        type: 'error',
+        message: `WebAuthn fejlede: ${err?.message ?? 'ukendt fejl'}`,
+      });
+    }
+  };
 
   const triggerBiometricScan = () => {
     setIsBiometricScanning(true);
@@ -444,7 +492,24 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
 
               {!isSignUp && (
                 <>
-                  {/* Biometric Passkey */}
+                  {/* WebAuthn (Modul 5.1) — ægte platform authenticator */}
+                  {webauthn.state.platform_available && (
+                    <button
+                      id="landing-webauthn-login"
+                      onClick={handleWebAuthnLogin}
+                      disabled={isLoading || webauthn.state.status === 'in_progress'}
+                      className="w-full bg-[#002b49] hover:bg-[#003a5f] text-white font-black text-[10.5px] py-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98 disabled:opacity-60"
+                    >
+                      <ScanFace className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        {webauthn.state.status === 'in_progress'
+                          ? 'Verificerer...'
+                          : 'Log ind med FaceID/Fingerprint'}
+                      </span>
+                    </button>
+                  )}
+
+                  {/* Biometric Passkey — mock-fallback */}
                   <button
                     id="landing-biometric-login"
                     onClick={triggerBiometricScan}
@@ -452,7 +517,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                     className="w-full bg-[#FAF9F6] border border-slate-200 hover:border-slate-300 text-primary font-black text-[10.5px] py-3 rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
                   >
                     <Fingerprint className="w-3.5 h-3.5 text-primary shrink-0 animate-pulse" />
-                    <span>Passkey / Biometrisk Log ind</span>
+                    <span>Passkey / Biometrisk Log ind (demo)</span>
                   </button>
                 </>
               )}
