@@ -1,0 +1,4 @@
+#!/bin/sh
+echo "CIRKEL GOVERNANCE GATE"
+if git diff --cached | grep -qE "(AIza[0-9A-Za-z_-]{35}|tbuluvvqhrbgfcpoifjl)"; then echo "BLOKERET: Secret eller MTC"; exit 1; fi
+echo "PASSERET"
