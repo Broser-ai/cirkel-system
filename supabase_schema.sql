@@ -198,3 +198,20 @@ $$ language plpgsql security definer;
 create trigger trg_on_auth_user_created
     after insert on auth.users
     for each row execute function public.handle_new_user_signup();
+
+-- ====================================================================
+-- FUTURE (fra tidligere supabase/schema.sql — slettet 2026-07-20)
+-- wallets-tabel var defineret der men aldrig deployet til live DB.
+-- Kør som migration 002 EFTER [ACCEPTED-BY-MICHAEL] hvis wallet-deposits
+-- skal spores separat fra profiles.balance:
+--
+-- CREATE TABLE IF NOT EXISTS public.wallets (
+--     user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE PRIMARY KEY,
+--     deposit_balance NUMERIC(10, 2) DEFAULT 0.00 NOT NULL CHECK (deposit_balance >= 0),
+--     created_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+--     updated_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+-- );
+-- ALTER TABLE public.wallets ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "Users read own wallet"
+--     ON public.wallets FOR SELECT USING (auth.uid() = user_id);
+-- ====================================================================
