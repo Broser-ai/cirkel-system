@@ -17,12 +17,22 @@ import {
   onSnapshot,
   getDocFromServer
 } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+// [Fase 1 · Modul 4.4 / Secret-hygiejne · Track F firebase-cleanup 2026-07-20]
+// Config læses fra Vite env-vars — ingen hardcoded key i repo.
+// Local dev: .env  ·  Production: Vercel env-vars.
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY as string | undefined,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN as string | undefined,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID as string | undefined,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET as string | undefined,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID as string | undefined,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID as string | undefined,
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_FIRESTORE_DB_ID as string | undefined,
+};
 
 // Detect if we are using the real configured Firebase, or the mock/placeholder configuration
-export const isRealFirebase = 
-  firebaseConfig && 
-  firebaseConfig.apiKey && 
+export const isRealFirebase =
+  !!firebaseConfig.apiKey &&
   firebaseConfig.apiKey !== "MOCK_API_KEY_PLACEHOLDER" &&
   !firebaseConfig.apiKey.startsWith("MY_");
 
