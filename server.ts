@@ -108,7 +108,7 @@ Du skal levere følgende felter i JSON:
       }
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.5-flash",
         contents,
         config: {
           systemInstruction,
@@ -273,7 +273,7 @@ Særligt fokus/målsætning: "${objective}"`
       }];
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.5-flash",
         contents,
         config: {
           systemInstruction,
@@ -376,7 +376,7 @@ Særligt fokus/målsætning: "${objective}"`
 Svar på et klart, pædagogisk, moderne og venligt dansk. Hold svarene relativt korte, overskuelige og motiverende (max 3-4 korthandlingselementer, gerne med emojis), så de passer til at blive læst på en mobilskærm. Hvis brugeren spørger om noget uden for affaldssortering, skal du høfligt lede dem tilbage til emnet genbrug og bæredygtighed.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.5-flash",
         contents: formattedContents,
         config: {
           systemInstruction,
