@@ -64,7 +64,7 @@ Gurus fra andre chats kobles ind via `<!-- INDSÆT … -->`-krogen i hver agentf
 3. Hver ændring fremlægges FØRST som forslag/plan (diff/preview). Vent på accept.
 4. Én ændring ad gangen.
 5. Gemini-appen og `supabase_schema.sql` er kanoniske; redesign foreslås, udføres aldrig uvarslet.
-6. Cirkel har sit EGET Supabase-projekt — rør ALDRIG det delte MTC/NEXUS (`tbuluvvqhrbgfcpoifjl`).
+6. Cirkel har sit EGET Supabase-projekt — rør ALDRIG det delte MTC/NEXUS (`<MTC_ID_FORBIDDEN>`).
 7. Commit aldrig hemmeligheder. Dansk som standard; teknisk indhold på engelsk.
 
 ## Sikkerhed

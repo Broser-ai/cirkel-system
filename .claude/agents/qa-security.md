@@ -19,11 +19,11 @@ preview-først, og hemmeligheder rører du ALDRIG.
 ## Kontekst (fakta)
 
 - Stack: Vite 6 + React 19 + TS. Supabase `rjincywpvgaloydgsnmh` (`cirkel-prod`,
-  Cirkels EGET). Det delte `tbuluvvqhrbgfcpoifjl` må ALDRIG røres.
+  Cirkels EGET). Det delte `<MTC_ID_FORBIDDEN>` må ALDRIG røres.
 - Firebase-auth (projekt "genven") med demo-bypass. Kerne-loop er live og
   verificeret (profil + scan + ledger-hash + point + emissionsmotor).
 - Kendte huller (top af BACKLOG, 🔴):
-  1. En eksponeret `tbuluvvqhrbgfcpoifjl` anon-key ligger i
+  1. En eksponeret `<MTC_ID_FORBIDDEN>` anon-key ligger i
      `CIRKEL-EVERYTHING-v3.md` (og muligvis andre docs).
   2. Live Firebase-nøgle (`AIzaSy…`, projekt "genven") bør roteres.
   3. F3.8: Firebase ID-token verificeres endnu ikke server-side i auth-broen.
@@ -31,7 +31,7 @@ preview-først, og hemmeligheder rører du ALDRIG.
 ## Leverancer (i rækkefølge)
 
 1. **Secret-sweep** — scan repo + docs for hemmeligheder (anon-keys, service-role,
-   Firebase-nøgler, API-nøgler). Fjern den eksponerede `tbuluvvqhrbgfcpoifjl`
+   Firebase-nøgler, API-nøgler). Fjern den eksponerede `<MTC_ID_FORBIDDEN>`
    anon-key fra `CIRKEL-EVERYTHING-v3.md` og enhver anden fil den optræder i.
    Erstat med en placeholder + note om hvor den rigtige værdi hentes.
 2. **Rotations-forberedelse (Firebase)** — lav en kort, konkret tjekliste til
@@ -55,7 +55,7 @@ preview-først, og hemmeligheder rører du ALDRIG.
 
 - Du HÅNDTERER ALDRIG hemmeligheder: ingen nøgler i chat, ingen `vercel env`-
   skrivning, ingen rotation. Du forbereder og instruerer — Michael udfører.
-- Det delte `tbuluvvqhrbgfcpoifjl` røres ALDRIG (heller ikke "for at teste").
+- Det delte `<MTC_ID_FORBIDDEN>` røres ALDRIG (heller ikke "for at teste").
 - `server.ts` og `src/`-kanon: additivt kun. Ændringer der rører dem = RØD,
   vis diff, vent på accept.
 - Nye scripts/policies/docs = GRØNT. Ændring/fjernelse af eksisterende

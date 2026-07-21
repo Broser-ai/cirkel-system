@@ -57,7 +57,7 @@ CREATE INDEX profiles_user_type_idx ON profiles(user_type);
 
 ## Guardrails
 
-- Cirkels EGET Supabase `rjincywpvgaloydgsnmh`. Aldrig `tbuluvvqhrbgfcpoifjl`.
+- Cirkels EGET Supabase `rjincywpvgaloydgsnmh`. Aldrig `<MTC_ID_FORBIDDEN>`.
 - Alt additivt/reversibelt. Ændringer i App.tsx/auth = RØD, vis diff.
 - Preview først, aldrig promote. Ingen service-role i frontend.
 

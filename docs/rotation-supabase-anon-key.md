@@ -66,7 +66,7 @@ Dette er den vigtigste del. Rotation brækker enhver app der brugte den gamle n�
 ```bash
 # Erstat <OLD_ANON_KEY> med den gamle værdi fra 1Password (hvis du gemte den)
 # Eller ignorér dette trin hvis nøglen er slettet lokalt
-curl -s "https://tbuluvvqhrbgfcpoifjl.supabase.co/rest/v1/profiles?limit=1" \
+curl -s "https://<MTC_ID_FORBIDDEN>.supabase.co/rest/v1/profiles?limit=1" \
   -H "apikey: <OLD_ANON_KEY>" \
   -H "Authorization: Bearer <OLD_ANON_KEY>"
 # Forventet: 401 Invalid JWT

@@ -13,7 +13,7 @@
 4. **Hver ændring vises FØRST som native preview her i sideruden** — før noget skrives til disk.
 5. **Én ændring ad gangen.** Ingen bundling af flere ændringer i ét forslag.
 6. **Din Gemini-app er kanonisk.** `supabase_schema.sql` er dit skema; det redesignes ikke.
-7. **Hemmeligheder commits aldrig.** Cirkel kører på sit **eget** Supabase-projekt — aldrig det delte `tbuluvvqhrbgfcpoifjl`.
+7. **Hemmeligheder commits aldrig.** Cirkel kører på sit **eget** Supabase-projekt — aldrig det delte `<MTC_ID_FORBIDDEN>`.
 
 > Brydes én af disse regler, er arbejdet ugyldigt og rulles tilbage.
 

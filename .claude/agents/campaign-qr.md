@@ -69,7 +69,7 @@ En QR trykt på emballage kan ALDRIG ændres bagefter. Derfor:
 
 ## Guardrails (ufravigelige)
 
-- Cirkels EGET Supabase `rjincywpvgaloydgsnmh`. Aldrig `tbuluvvqhrbgfcpoifjl`.
+- Cirkels EGET Supabase `rjincywpvgaloydgsnmh`. Aldrig `<MTC_ID_FORBIDDEN>`.
 - QR trykt på emballage = stabil identifikator KUN. Aldrig kampagne-data i koden.
 - RLS på alle kampagne-/fil-tabeller: en konto ser kun egne data.
 - Ingen service-role i frontend; uploads/downloads via sikre endpoints.
