@@ -142,7 +142,7 @@ Baseret på lokal filsystem-scan, ikke antagelser. Fuld rapport: `PROJECT_STATUS
 ---
 
 ## Sikkerhed/oprydning (bør tages tidligt)
-- 🔴 Fjern reference til delt projekt `tbuluvvqhrbgfcpoifjl` + eksponeret anon-nøgle i `CIRKEL-EVERYTHING-v3.md`.
+- 🔴 Fjern reference til delt projekt `<MTC_ID_FORBIDDEN>` + eksponeret anon-nøgle i `CIRKEL-EVERYTHING-v3.md`.
 - 🔴 Rotér/begræns den live Firebase-nøgle i `firebase-applet-config.json`.
 
 ## Arbejdsregler (gælder alt herover)

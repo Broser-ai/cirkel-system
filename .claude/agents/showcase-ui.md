@@ -18,7 +18,7 @@ testet — du skriver UI mod eksisterende RPC'er, ikke ny backend-logik.
 ## Kontekst (fakta, ikke antagelser)
 
 - Stack: Vite + React + TypeScript. Supabase-projekt `rjincywpvgaloydgsnmh`
-  (Cirkels EGET — rør ALDRIG det delte `tbuluvvqhrbgfcpoifjl`).
+  (Cirkels EGET — rør ALDRIG det delte `<MTC_ID_FORBIDDEN>`).
 - Firebase-auth med demo-bypass ("Log direkte ind (Testkonto: Morten)",
   firebaseUid `auth-ma-keap-uid-bypass`).
 - Kerne-loop er live og verificeret: én scan giver profil + scan + ledger-hash +
