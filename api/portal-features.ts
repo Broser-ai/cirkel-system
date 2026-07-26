@@ -3,7 +3,13 @@
 // POST body {firebaseUid, business_custom_content, kommune_custom_content}:
 //   Kalder set_portal_features RPC som verificerer admin-rolle server-side.
 //   INGEN service-role i frontend.
+//
+// F3.8: Server-side Firebase ID-token verifikation FØR set_portal_features RPC.
+//   resolveTrustedUid() kastes i enforce-mode → 401 UID_SPOOF_DETECTED.
+//   I warn_only-mode logges advarsel men request fortsætter.
+//   Det verificerede uid bruges i stedet for req.body.firebaseUid.
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { resolveTrustedUid } from "./_verify-firebase-token.js";
 
 let _sb: SupabaseClient | null = null;
 function getSupabase(): SupabaseClient | null {
@@ -39,9 +45,33 @@ export default async function handler(req: any, res: any) {
     if (!firebaseUid) {
       return res.status(401).json({ error: "firebaseUid påkrævet." });
     }
+
+    // F3.8 — Verificér Firebase ID-token FØR admin-mutation.
+    // Enforce-mode: kaster ved missing/invalid token eller UID mismatch → 401.
+    // Warn_only-mode: pass-through med console.warn hvis token mangler/mismatch.
+    let trustedUid: string;
+    try {
+      const verified = await resolveTrustedUid(req, firebaseUid);
+      trustedUid = verified.trusted_uid;
+      if (!verified.verified) {
+        console.warn(
+          `[F3.8][portal-features] warn_only pass-through: token ikke kryptografisk verificeret. reason="${verified.reason}"`
+        );
+      } else if (verified.spoofed) {
+        console.warn(
+          `[F3.8][portal-features] warn_only: UID mismatch mellem token og body. reason="${verified.reason}"`
+        );
+      }
+    } catch (verifyErr: any) {
+      console.error(
+        `[F3.8][portal-features] UID_SPOOF_DETECTED — admin-mutation blokeret. reason="${verifyErr?.reason ?? verifyErr?.message}"`
+      );
+      return res.status(401).json({ error: "UID_SPOOF_DETECTED" });
+    }
+
     try {
       const { data, error } = await sb.rpc("set_portal_features", {
-        p_firebase_uid: firebaseUid,
+        p_firebase_uid: trustedUid,
         p_business_custom_content: !!business_custom_content,
         p_kommune_custom_content: !!kommune_custom_content,
       });

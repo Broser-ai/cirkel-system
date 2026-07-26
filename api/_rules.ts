@@ -87,3 +87,36 @@ export async function runRules(opts: {
     didYouKnow: k.fact || "—",
   };
 }
+
+/**
+ * F1.10 explicit helper matcher Aurelle's skitse — kort compat-wrapper for
+ * kode der forventer signaturen `ruleBasedScan(imageData, ...)`. Bruger samme
+ * CirkelEngine pipeline som runRules() men accepterer image-baseret input.
+ *
+ * imageData er informativt kun i Fase 1 (regelbaseret pipeline læser ikke pixels),
+ * men reserveres i output.metadata så downstream ved at rå-input var vedhæftet.
+ */
+export async function ruleBasedScan(
+  imageData: Buffer | string | undefined,
+  opts: { productName?: string; weight_grams?: number; municipality?: string } = {},
+): Promise<any | null> {
+  const municipality = opts.municipality || "Aarhus Kommune";
+  const result = await runRules({
+    productName: opts.productName,
+    weight_grams: opts.weight_grams,
+    municipality,
+  });
+  if (!result) return null;
+  const hasImage = imageData !== undefined && (
+    Buffer.isBuffer(imageData) ||
+    (typeof imageData === "string" && imageData.length > 0)
+  );
+  return {
+    ...result,
+    _pipeline: "rule_based",
+    _image_attached: hasImage,
+    _phase1_note: hasImage
+      ? "Fase 1: image bevaret som metadata; pipeline er stadig regel-baseret (ikke pixel-analyse)."
+      : "Fase 1: pure product-name pipeline.",
+  };
+}

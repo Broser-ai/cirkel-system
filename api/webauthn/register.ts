@@ -6,9 +6,9 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { verifyChallengeCookie, _CHALLENGE_COOKIE_NAME } from './challenge';
-import { anontomeHash, anontomeBytea } from '../../src/lib/anontome-server';
-import { issueSession, cookieHeader } from '../../src/lib/session';
+import { verifyChallengeCookie, _CHALLENGE_COOKIE_NAME } from './challenge.js';
+import { anontomeHash, anontomeBytea } from '../../src/lib/anontome-server.js';
+import { issueSession, cookieHeader } from '../../src/lib/session.js';
 
 interface RegisterBody {
   credential_id: string;

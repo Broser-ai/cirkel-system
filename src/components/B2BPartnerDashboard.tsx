@@ -409,7 +409,7 @@ export default function B2BPartnerDashboard({ user, onChangeUser, portalType = '
   const [flagLoaded, setFlagLoaded] = useState(false);
   useEffect(() => {
     let alive = true;
-    fetch('/api/portal-features')
+    fetch('/api/b2b/analytics?range=30d')
       .then((r) => r.json())
       .then((j) => {
         if (!alive) return;
@@ -6038,7 +6038,7 @@ export default function B2BPartnerDashboard({ user, onChangeUser, portalType = '
                       resilienceDesc = "Grøn frontløber: Meget robust modståelse over for EU PPWR og PFAS-direktiver.";
                     } else if (savingPercentage >= 35) {
                       resilienceGrade = "B";
-                      resilienceColor = "text-gray-805 bg-gray-100 border-gray-250";
+                      resilienceColor = "text-gray-800 bg-gray-100 border-gray-250";
                       resilienceDesc = "Middel resilience: Moderat beskyttelse. Klar afgiftsmæssig forbedring påkrævet.";
                     } else if (savingPercentage >= 15) {
                       resilienceGrade = "C";

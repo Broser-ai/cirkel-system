@@ -4,7 +4,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { verifySession, readCookieFromHeader } from '../../src/lib/session';
+import { verifySession, readCookieFromHeader } from '../../src/lib/session.js';
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;

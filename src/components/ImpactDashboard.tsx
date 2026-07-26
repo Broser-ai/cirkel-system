@@ -185,7 +185,7 @@ export default function ImpactDashboard({ user }: ImpactDashboardProps) {
         </div>
 
         {/* Primary Statistics displaying big numbers (3 columns) */}
-        <div className="col-span-3 pl-1 flex flex flex-col justify-center relative z-10">
+        <div className="col-span-3 pl-1 flex flex-col justify-center relative z-10">
           <span className="text-[9px] font-bold text-muted-text uppercase tracking-wider">
             {activeTab === 'co2' ? 'Samlet CO₂ sparet' : 'Samlet genanvendt'}
           </span>

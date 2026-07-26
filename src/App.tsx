@@ -242,7 +242,7 @@ export default function App() {
   }
 
   return (
-    <div className="bg-[#DFD9CE] min-h-screen w-full flex flex-col items-center justify-start p-4 md:p-6 font-sans antialiased text-primary selection:bg-accent selection:text-primary">
+    <div className="bg-[#DFD9CE] dark:bg-[#141E1C] min-h-screen w-full flex flex-col items-center justify-start p-4 md:p-6 font-sans antialiased text-primary selection:bg-accent selection:text-primary transition-colors duration-300">
       
       {/* 🚀 STRATEGIC PLATFORM SWITCHER HEADER */}
       <div className="w-full max-w-6xl bg-white border border-primary/10 rounded-3xl p-3 flex flex-col md:flex-row justify-between items-center gap-4 shadow-md z-40 mb-6 select-none animate-in slide-in-from-top duration-300">
@@ -438,14 +438,7 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={tab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
+            <div key={tab}>
                 {tab === 'scan' && (
                   <ScanTab 
                     user={user} 
@@ -494,8 +487,7 @@ export default function App() {
                 {tab === 'leaderboard' && (
                   <LeaderboardTab user={user} />
                 )}
-              </motion.div>
-            </AnimatePresence>
+            </div>
           </div>
 
           {/* Bottom tab bar exactly like standard mobile bar */}

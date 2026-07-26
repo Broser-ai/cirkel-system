@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --primary: #0B3D2E;
   --accent: #C8F24A;
@@ -7,70 +9,79 @@
   --muted-text: #8A8A7A;
   --success-alt: #2DD4A0;
   --warning-alt: #F5C542;
-  
+
   --card-bg: #ffffff;
-  --card-border-light: #F3F4F6; /* gray-100 */
-  --card-border-medium: #E5E7EB; /* gray-200 */
-  --card-hover-bg: #F9FAFB; /* gray-50 */
+  --card-border-light: #F3F4F6;
+  --card-border-medium: #E5E7EB;
+  --card-hover-bg: #F9FAFB;
+
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-450: #838B99;
+  --gray-500: #6B7280;
+  --gray-550: #5A616E;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-800: #1F2937;
+  --gray-900: #111827;
 }
 
 .dark {
-  --primary: #ECF4F0;       /* Light sage creamy text */
-  --accent: #C8F24A;        /* keep nice neon accent */
-  --bg-base: #0B1311;       /* deep forest obsidian back */
-  --muted-text: #7A9086;    /* light sage secondary text */
+  --primary: #ECF4F0;
+  --accent: #C8F24A;
+  --bg-base: #0B1311;
+  --muted-text: #7A9086;
   --success-alt: #34D399;
   --warning-alt: #FBBF24;
-  
-  --card-bg: #12221E;       /* deep card green background */
+
+  --card-bg: #12221E;
   --card-border-light: #1A322C;
   --card-border-medium: #223F37;
   --card-hover-bg: #162B26;
+
+  --gray-300: #2D3F39;
+  --gray-400: #4A6358;
+  --gray-450: #5B7769;
+  --gray-500: #6B8A7D;
+  --gray-550: #7B998D;
+  --gray-600: #8AA89A;
+  --gray-700: #A8C4B8;
+  --gray-800: #C8DDD4;
+  --gray-900: #E5F0EB;
 }
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  
+
   --color-primary: var(--primary);
   --color-accent: var(--accent);
   --color-bg-base: var(--bg-base);
   --color-muted-text: var(--muted-text);
   --color-success-alt: var(--success-alt);
   --color-warning-alt: var(--warning-alt);
-  
-  /* Retheming standard utility classes to adapt gracefully */
+
   --color-white: var(--card-bg);
   --color-gray-50: var(--card-hover-bg);
   --color-gray-100: var(--card-border-light);
   --color-gray-150: var(--card-border-light);
   --color-gray-200: var(--card-border-medium);
   --color-gray-250: var(--card-border-medium);
+  --color-gray-300: var(--gray-300);
+  --color-gray-400: var(--gray-400);
+  --color-gray-450: var(--gray-450);
+  --color-gray-500: var(--gray-500);
+  --color-gray-550: var(--gray-550);
+  --color-gray-600: var(--gray-600);
+  --color-gray-700: var(--gray-700);
+  --color-gray-800: var(--gray-800);
+  --color-gray-900: var(--gray-900);
 }
 
 body {
-  @apply bg-[#DFD9CE] text-primary font-sans antialiased transition-colors duration-300;
-}
-
-/* Ensure the full window background of the simulated preview updates correctly */
-.dark body {
-  background-color: #141E1C !important;
-}
-
-/* Custom adjustment for the inner background of notifications or inset cards */
-.dark .bg-\[\#FAF9F6\] {
-  background-color: #162B26 !important;
-}
-
-.dark .bg-white\/10 {
-  background-color: rgba(255, 255, 255, 0.04) !important;
-}
-
-.dark .text-[#C8F24A] {
-  color: #C8F24A !important;
+  @apply bg-[#DFD9CE] dark:bg-[#141E1C] text-primary font-sans antialiased transition-colors duration-300;
 }
 
 /* Hide scrollbar for cleaner mobile look in web preview */
 ::-webkit-scrollbar {
   display: none;
 }
-

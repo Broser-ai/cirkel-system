@@ -4,19 +4,24 @@
 //
 // Flow:
 //   1. Verificer session (JWT gyldig, sub_hash ok)
-//   2. Rate-limit: max 1 request per bruger per 24t
-//   3. Check balance ≥ amount_ore, amount ≥ 100 øre (1 DKK)
-//   4. Insert payout_requests med status='pending'
-//   5. Marker de reserverede rewards som 'reserved_for_payout'
-//   6. Insert governance_transactions audit-row
-//   7. Returner reference til klient — Michael godkender manuelt
+//   2. F3.8: resolveTrustedUid(req) — reject hvis UID spoof
+//   3. Rate-limit: max 1 request per bruger per 24t
+//   4. Check balance ≥ amount_ore, amount ≥ 100 øre (1 DKK)
+//   5. Modul 1.3: evaluatePoolSovereignty(...) — divert til brand-vouchers
+//      hvis puljen er under safety threshold; blokér hvis utilstrækkelig.
+//   6. Insert payout_requests med status='pending'
+//   7. Marker de reserverede rewards som 'reserved_for_payout'
+//   8. Insert governance_transactions audit-row
+//   9. Returner reference til klient — Michael godkender manuelt
 //
 // INGEN autonom MobilePay/bank-integration Fase 1.
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { createHash, randomBytes } from 'crypto';
-import { verifySession, readCookieFromHeader } from '../../src/lib/session';
+import { verifySession, readCookieFromHeader } from '../../src/lib/session.js';
+import { resolveTrustedUid } from '../_verify-firebase-token.js';
+import { evaluatePoolSovereignty } from '../_pool-guard.js';
 
 const MIN_PAYOUT_ORE = 100;   // 1 DKK
 const MAX_PAYOUT_ORE = 50_000; // 500 DKK per request (Fase 1 loft)
@@ -53,6 +58,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const token = readCookieFromHeader(req.headers.cookie);
   const session = token ? verifySession(token) : null;
   if (!session) return res.status(401).json({ error: 'not_authenticated' });
+
+  // F3.8: verify Firebase ID-token og reject på UID-spoof FØR videre payout-logik.
+  // Bruger firebaseUid fra body som clientProvidedUid (matches mod token.uid);
+  // resolveTrustedUid kaster i enforce-mode, warn-only pass-through logges.
+  let trustedUid: string | null = null;
+  try {
+    const clientProvidedUid = String(req.body?.firebaseUid ?? '');
+    const trust = await resolveTrustedUid(req, clientProvidedUid);
+    if (trust.spoofed) {
+      console.warn('[request-payout] F3.8 UID_SPOOF_DETECTED:', trust.reason);
+      return res.status(403).json({
+        error: 'uid_spoof_detected',
+        reason: trust.reason,
+      });
+    }
+    trustedUid = trust.trusted_uid || null;
+  } catch (err: any) {
+    const status = typeof err?.status === 'number' ? err.status : 401;
+    const reason = err?.reason ?? err?.message ?? 'firebase_token_verify_failed';
+    console.warn('[request-payout] F3.8 verify fejlede:', reason);
+    return res.status(status).json({ error: 'unauthorized', reason });
+  }
 
   const amount_ore = Number(req.body?.amount_ore);
   const method = String(req.body?.method ?? 'mobilepay');
@@ -151,6 +178,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    // Modul 1.3 — Pool Sovereignty Guard.
+    // Evaluerer om puljen kan bære udbetalingen som MobilePay-kontant,
+    // eller om den skal omdirigeres til brand-vouchers / blokeres.
+    // producer_id = trusted UID (falls back til session sub_hash) så guarden
+    // har en stabil producent-identitet i log/audit.
+    const producerId = trustedUid ?? session.sub_hash;
+    const remainingFundsDkk = currentBalance / 100;
+    const requestedAmountDkk = amount_ore / 100;
+
+    let poolDecision;
+    try {
+      poolDecision = evaluatePoolSovereignty(
+        producerId,
+        remainingFundsDkk,
+        requestedAmountDkk,
+      );
+    } catch (guardErr: any) {
+      console.error('[request-payout] pool-guard fejlede:', guardErr?.message ?? guardErr);
+      return res.status(500).json({ error: 'pool_guard_failed' });
+    }
+
+    if (poolDecision.action === 'DIVERT_TO_BRAND_VOUCHERS') {
+      console.warn('[request-payout] Modul 1.3 divert:', poolDecision.reason);
+      return res.status(200).json({
+        status: 'diverted',
+        action: 'brand_vouchers',
+        reason: poolDecision.reason,
+        remaining_funds_dkk: poolDecision.remainingFundsDkk,
+        requested_payout_dkk: poolDecision.requestedPayoutDkk,
+        evaluated_at: poolDecision.evaluatedAt,
+      });
+    }
+
+    if (poolDecision.action === 'BLOCK_INSUFFICIENT') {
+      console.warn('[request-payout] Modul 1.3 block:', poolDecision.reason);
+      return res.status(402).json({
+        error: 'insufficient_pool_funds',
+        action: 'blocked',
+        reason: poolDecision.reason,
+        remaining_funds_dkk: poolDecision.remainingFundsDkk,
+        requested_payout_dkk: poolDecision.requestedPayoutDkk,
+        evaluated_at: poolDecision.evaluatedAt,
+      });
+    }
+
+    // poolDecision.action === 'EXECUTE_MOBILEPAY_CASH' → fortsæt eksisterende flow.
+
     // Find rewards at reservere (FIFO)
     const { data: rewards, error: rewError } = await supabase
       .from('citizen_rewards')
@@ -212,6 +286,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       status: 'pending',
       requested_at: payoutRow.requested_at,
       estimated_settlement: 'næste hverdag',
+      pool_guard: {
+        action: poolDecision.action,
+        reason: poolDecision.reason,
+        remaining_funds_dkk: poolDecision.remainingFundsDkk,
+      },
       message: 'Din anmodning er modtaget. Du får en notifikation når den er udbetalt.',
     });
   } catch (err: any) {

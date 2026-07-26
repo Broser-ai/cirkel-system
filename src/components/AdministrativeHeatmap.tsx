@@ -778,7 +778,7 @@ export default function AdministrativeHeatmap() {
       <div className="bg-emerald-900/5 border border-emerald-900/10 p-3.5 rounded-2xl flex items-center gap-2.5 text-[10px] text-emerald-800">
         <Sliders className="w-4 h-4 shrink-0 text-[#85A912]" />
         <span>
-          <strong>Leder note:</strong> Sorteringsdensitet og mængdekriterier er tilpasset her til {now => 'Danmarks Miljøportal (CSRD)'}. Forbundne Firestore ledgers valideres via Cirkels cryptographic status protocol. {dataSourcesSummary}
+          <strong>Leder note:</strong> Sorteringsdensitet og mængdekriterier er tilpasset her til Danmarks Miljøportal (CSRD). Forbundne Firestore ledgers valideres via Cirkels cryptographic status protocol. {dataSourcesSummary}
         </span>
       </div>
 

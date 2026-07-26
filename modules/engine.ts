@@ -22,7 +22,19 @@ import { AdaptationModule } from "./modules/adaptation.js";
 import { OptimizationModule } from "./modules/optimization.js";
 import { EvolutionModule } from "./modules/evolution.js";
 
-// CirkelEngine = core-modulet (det 23.): registrerer alle moduler og kører pipelines.
+// Sovereign ESG Ecosystem (24/7 autonomous runtime)
+import { SovereignLedger } from "../sovereign/ledger.js";
+import { EventBus } from "../sovereign/event-bus.js";
+import { DataFabric } from "../sovereign/models/data-fabric.js";
+import { SupplierEngine } from "../sovereign/models/supplier-engine.js";
+import { DPPEngine } from "../sovereign/models/dpp-engine.js";
+import { CarbonTaxEngine } from "../sovereign/models/carbon-tax.js";
+import { MaterialityEngine } from "../sovereign/models/materiality-engine.js";
+import { ScenarioEngine } from "../sovereign/models/scenario-engine.js";
+import { SurveyEngine } from "../sovereign/models/survey-engine.js";
+import { AuditEngine } from "../sovereign/models/audit-engine.js";
+
+// CirkelEngine = core-modulet (det 32.): registrerer alle moduler og kører pipelines.
 export class CirkelEngine {
   private modules = new Map<string, BaseModule>();
   layer = "core";
@@ -51,6 +63,18 @@ export class CirkelEngine {
     this.register(new AdaptationModule());
     this.register(new OptimizationModule());
     this.register(new EvolutionModule());
+
+    // Sovereign ESG Ecosystem (24/7 autonomous runtime)
+    this.register(new SovereignLedger());
+    this.register(new EventBus());
+    this.register(new DataFabric());
+    this.register(new SupplierEngine());
+    this.register(new DPPEngine());
+    this.register(new CarbonTaxEngine());
+    this.register(new MaterialityEngine());
+    this.register(new ScenarioEngine());
+    this.register(new SurveyEngine());
+    this.register(new AuditEngine());
   }
   private register(m: BaseModule) { this.modules.set(m.name, m); }
   get(name: string) { return this.modules.get(name); }

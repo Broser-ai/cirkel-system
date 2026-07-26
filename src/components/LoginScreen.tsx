@@ -278,7 +278,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
   };
 
   return (
-    <div className="bg-[#DFD9CE] min-h-screen font-sans selection:bg-[#c8f24a] selection:text-[#002b49] text-primary antialiased flex flex-col justify-between">
+    <div className="bg-[#DFD9CE] dark:bg-[#141E1C] min-h-screen font-sans selection:bg-[#c8f24a] selection:text-[#002b49] text-primary antialiased flex flex-col justify-between transition-colors duration-300">
       
       {/* 1. PUBLIC LANDING HEADER */}
       <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-primary/5 select-none transition-all">

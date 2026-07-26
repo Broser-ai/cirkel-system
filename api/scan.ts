@@ -6,6 +6,10 @@ import { providerOrder } from "./_ai.js";
 import { runRules } from "./_rules.js";
 import { processScan } from "../lib/cirkel.js";
 import { callWorkflow as callRoboflowWorkflow, stubResponse as roboflowStub } from "./roboflow-fallback.js";
+import { resolveTrustedUid } from "./_verify-firebase-token.js";
+import { calculateRiskScore, generateImageHash, type VerificationTier } from "./_fraud.js";
+import { evaluatePoolSovereignty } from "./_pool-guard.js";
+import logger from "../src/lib/logger.js";
 
 // F1.11 — Supabase server-side klient (service-role; KUN server, aldrig VITE_).
 // Lazy init for at undgå crash i mock/lokal hvor env ikke er sat.
@@ -45,31 +49,157 @@ export default async function handler(req: any, res: any) {
   const { image, productName, municipality, weight_grams, firebaseUid, email, fullName, barcode } = req.body;
   const targetMunicipality = municipality || "Aarhus Kommune";
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // F3.8 — resolveTrustedUid FØR alt andet arbejde.
+  // Verificerer Firebase ID-token mod cryptografi. Retter body-spoof.
+  //   • enforce-mode: kaster hvis token mangler/mismatcher → 401 til klient
+  //   • warn_only-mode: logger advarsel men fortsætter med body-UID
+  // Anonyme scans (ingen firebaseUid) springes over — der er intet at verificere.
+  // ─────────────────────────────────────────────────────────────────────────
+  let trustedUid: string | undefined = firebaseUid;
+  let uidVerified = false;
+  let uidSpoofed = false;
+  if (firebaseUid) {
+    try {
+      const verify = await resolveTrustedUid(req, firebaseUid);
+      trustedUid = verify.trusted_uid || firebaseUid;
+      uidVerified = verify.verified;
+      uidSpoofed = verify.spoofed;
+      if (uidSpoofed) {
+        logger.warn('[F3.8] warn_only: spoof detected', { firebaseUidBody: firebaseUid, trustedUid, reason: verify.reason });
+      } else if (!uidVerified) {
+        logger.warn('[F3.8] warn_only: ingen crypto-verify (mangler token eller warn_only pass-through)', { reason: verify.reason });
+      }
+    } catch (err: any) {
+      const status = err?.status ?? 401;
+      const reason = err?.reason ?? err?.message ?? "UID_SPOOF_DETECTED";
+      logger.error('[F3.8] enforce BLOCKED scan', err, { status, reason });
+      return res.status(status).json({ error: "UID_SPOOF_DETECTED", reason });
+    }
+  } else {
+    logger.info('[F3.8] anonymt scan — ingen firebaseUid at verificere');
+  }
+
   if (!image && !productName) {
     return res.status(400).json({ error: "Enten billede eller produktnavn er påkrævet." });
   }
 
-  // F1.11 v2: persistér via Firebase-bro hvis firebaseUid + Supabase-env tilgængelige.
+  // F3.8 hjælper — udled verifikations-tier til fraud-motoren.
+  function verificationTier(): VerificationTier {
+    if (!trustedUid) return "anonymous";
+    if (uidVerified) return "verified";
+    return "standard";
+  }
+
+  // F3.8 hjælper — precompute image-hash én gang (bruges af fraud-motoren).
+  let cachedImageHash: string | undefined;
+  function getImageHash(): string | undefined {
+    if (cachedImageHash) return cachedImageHash;
+    if (!image) return undefined;
+    try {
+      cachedImageHash = generateImageHash(String(image));
+      return cachedImageHash;
+    } catch (err: any) {
+      logger.warn('[F3.8-fraud] generateImageHash fejlede', { message: err?.message });
+      return undefined;
+    }
+  }
+
+  // F1.11 v2: persistér via Firebase-bro hvis trustedUid + Supabase-env tilgængelige.
   // DB's resolve_profile håndterer auto-opret/find — ingen frontend-mapping nødvendig.
   async function persistIfPossible(data: any) {
-    if (!firebaseUid) {
-      console.log(`[F1.11-diag] SKIP: firebaseUid missing`);
+    if (!trustedUid) {
+      logger.info('[F1.11-diag] SKIP: trustedUid missing (anonymt scan)');
       return undefined;
     }
     const sb = getSupabase();
     if (!sb) {
-      console.log(`[F1.11-diag] SKIP: getSupabase()=null (URL=${!!process.env.VITE_SUPABASE_URL}, KEY=${!!process.env.SUPABASE_SERVICE_ROLE_KEY})`);
+      logger.info('[F1.11-diag] SKIP: getSupabase()=null', { hasUrl: !!process.env.VITE_SUPABASE_URL, hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY });
       return undefined;
     }
     const n = parseNumeric(data, weight_grams);
     if (!n) {
-      console.log(`[F1.11-diag] SKIP: parseNumeric returned null | pantValue=${data?.pantValue} co2Saved=${data?.co2Saved} packagingWeight=${data?.packagingWeight} weight_grams=${weight_grams}`);
+      logger.info('[F1.11-diag] SKIP: parseNumeric returned null', { pantValue: data?.pantValue, co2Saved: data?.co2Saved, packagingWeight: data?.packagingWeight, weight_grams });
       return undefined;
     }
-    console.log(`[F1.11-diag] ATTEMPTING process_scan | material=${n.material} weight=${n.weightGrams} points=${n.points} kroner=${n.kroner} co2Kg=${n.co2Kg}`);
+
+    // ───────────────────────────────────────────────────────────────────────
+    // F3.8 — fraud-score gating FØR process_scan.
+    // Historik-lookup er ikke wired her endnu; kun regler uden historik
+    // (fx high_value_unverified) kan udløse i dag. Plumbing er klar til
+    // at modtage historik når Supabase-query hookes ind.
+    // ───────────────────────────────────────────────────────────────────────
+    let fraudScore = 0;
+    let fraudFlags: string[] = [];
+    let fraudRecommend: string = "accept";
+    try {
+      const fraud = calculateRiskScore(
+        {
+          user_id: trustedUid,
+          scan_ts_ms: Date.now(),
+          image_hash: getImageHash(),
+          payout_dkk: n.kroner,
+          verification_tier: verificationTier(),
+        },
+        [], // TODO F3.9: hent historik fra sovereign_scans for at aktivere duplicate/geo/frequency
+      );
+      fraudScore = fraud.score;
+      fraudFlags = fraud.flags;
+      fraudRecommend = fraud.recommend;
+      logger.info('[F3.8-fraud] score computed', { score: fraudScore, flags: fraudFlags, recommend: fraudRecommend });
+      if (fraudScore >= 70) {
+        logger.warn('[F3.8-fraud] REJECT scan', { score: fraudScore, flags: fraudFlags, uid: trustedUid });
+        return {
+          fraud_rejected: true,
+          fraud_score: fraudScore,
+          fraud_flags: fraudFlags,
+          fraud_recommend: fraudRecommend,
+        };
+      }
+    } catch (err: any) {
+      logger.warn('[F3.8-fraud] calculateRiskScore fejlede — ignorer og fortsæt', { message: err?.message });
+    }
+
+    // ───────────────────────────────────────────────────────────────────────
+    // F3.8 — pool-sovereignty check FØR process_scan.
+    // Kun aktiv når pool-data er kendt (via body eller env). Ved lav pulje
+    // markeres udbetalingen som "divert til brand-vouchers" i responset.
+    // ───────────────────────────────────────────────────────────────────────
+    let poolDivert = false;
+    let poolDecisionReason: string | undefined;
+    const poolIdRaw = req.body?.producer_id ?? process.env.SCAN_POOL_ID;
+    const poolRemainingRaw = req.body?.pool_remaining_dkk ?? process.env.SCAN_POOL_REMAINING_DKK;
+    if (poolIdRaw && poolRemainingRaw !== undefined && n.kroner > 0) {
+      const poolRemaining = parseFloat(String(poolRemainingRaw));
+      if (Number.isFinite(poolRemaining)) {
+        try {
+          const decision = evaluatePoolSovereignty(String(poolIdRaw), poolRemaining, n.kroner);
+          poolDecisionReason = decision.reason;
+          if (decision.action === "DIVERT_TO_BRAND_VOUCHERS") {
+            poolDivert = true;
+            logger.warn('[pool-guard] DIVERT_TO_BRAND_VOUCHERS', { reason: decision.reason });
+          } else if (decision.action === "BLOCK_INSUFFICIENT") {
+            logger.warn('[pool-guard] BLOCK_INSUFFICIENT', { reason: decision.reason });
+            return {
+              pool_blocked: true,
+              pool_reason: decision.reason,
+              pool_producer_id: decision.producerId,
+              pool_remaining_dkk: decision.remainingFundsDkk,
+              pool_requested_dkk: decision.requestedPayoutDkk,
+            };
+          } else {
+            logger.info('[pool-guard] EXECUTE_MOBILEPAY_CASH', { reason: decision.reason });
+          }
+        } catch (err: any) {
+          logger.warn('[pool-guard] evaluatePoolSovereignty fejlede — ignorer og fortsæt', { message: err?.message });
+        }
+      }
+    }
+
+    logger.info('[F1.11-diag] ATTEMPTING process_scan', { uid: trustedUid, verified: uidVerified, material: n.material, weight: n.weightGrams, points: n.points, kroner: n.kroner, co2Kg: n.co2Kg });
     try {
       const saved = await processScan(sb, {
-        firebaseUid,
+        firebaseUid: trustedUid,
         email,
         fullName,
         material: n.material,
@@ -80,7 +210,7 @@ export default async function handler(req: any, res: any) {
         barcode,
         municipality: targetMunicipality,
       });
-      console.log(`[F1.11-diag] SUCCESS process_scan | user_id=${saved?.user_id} new_balance=${saved?.new_balance} ledger_hash=${String(saved?.ledger_hash).substring(0,16)}`);
+      logger.info('[F1.11-diag] SUCCESS process_scan', { user_id: saved?.user_id, new_balance: saved?.new_balance, ledger_hash_prefix: String(saved?.ledger_hash).substring(0, 16) });
       return {
         user_id: saved.user_id,
         new_balance: saved.new_balance,
@@ -89,9 +219,17 @@ export default async function handler(req: any, res: any) {
         member_status: saved.member_status,
         level: saved.level,
         ledger_hash: saved.ledger_hash,
+        // F3.8 meta-signaler til klienten:
+        uid_verified: uidVerified,
+        uid_spoofed: uidSpoofed,
+        fraud_score: fraudScore,
+        fraud_flags: fraudFlags,
+        fraud_recommend: fraudRecommend,
+        payout_diverted_to_vouchers: poolDivert,
+        pool_decision_reason: poolDecisionReason,
       };
     } catch (err: any) {
-      console.error(`[F1.11-diag] process_scan THREW: ${err?.message} | code=${err?.code} | details=${err?.details}`);
+      logger.error('[F1.11-diag] process_scan THREW', err, { code: err?.code, details: err?.details });
       return undefined;
     }
   }
@@ -240,7 +378,7 @@ Du skal levere følgende felter i JSON:
         return await respond(merged);
       }
     } catch (err: any) {
-      console.error('[scan] Roboflow-fallback fejlede:', err?.message ?? err);
+      logger.error('[scan] Roboflow-fallback fejlede', err);
     }
     return await respond(originalData);
   }
@@ -255,7 +393,7 @@ Du skal levere følgende felter i JSON:
         // rules kunne ikke detektere materiale → fortsæt til næste provider
       }
     } catch (error: any) {
-      console.error(`Scan via ${p} fejlede:`, error?.message);
+      logger.error(`Scan via ${p} fejlede`, error, { provider: p });
     }
   }
 
@@ -274,7 +412,7 @@ Du skal levere følgende felter i JSON:
         return await respond(rescued);
       }
     } catch (err: any) {
-      console.error('[scan] Roboflow direct-fallback fejlede:', err?.message ?? err);
+      logger.error('[scan] Roboflow direct-fallback fejlede', err);
     }
   }
 

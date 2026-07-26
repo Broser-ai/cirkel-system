@@ -10,8 +10,8 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { anontomeHash, anontomeBytea } from '../../src/lib/anontome-server';
-import { issueSession, cookieHeader } from '../../src/lib/session';
+import { anontomeHash, anontomeBytea } from '../../src/lib/anontome-server.js';
+import { issueSession, cookieHeader } from '../../src/lib/session.js';
 
 const MITID_TOKEN_ENDPOINT = process.env.MITID_TOKEN_ENDPOINT
   || 'https://pp.netseidbroker.dk/op/connect/token'; // MitID broker preprod

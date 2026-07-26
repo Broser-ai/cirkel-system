@@ -8,7 +8,7 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { AARHUS_IOT_CONTAINERS, AARHUS_CONTAINER_CAPACITY_GRAMS } from '../src/lib/aarhus-config';
+import { AARHUS_IOT_CONTAINERS, AARHUS_CONTAINER_CAPACITY_GRAMS } from '../src/lib/aarhus-config.js';
 
 const CACHE_TTL_MS = 5 * 60_000;
 
@@ -82,7 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Vælg containeren med lavest fill (mest ledig kapacitet)
   fillEstimates.sort((a, b) => a.fill_pct - b.fill_pct);
   const best = fillEstimates[0];
-  const bestMeta = AARHUS_IOT_CONTAINERS.find(c => c.id === best.id)!;
+  const bestMeta = AARHUS_IOT_CONTAINERS.find(c => c.id === best.id) ?? AARHUS_IOT_CONTAINERS[0];
 
   const bonus_ore = best.fill_pct < 20 ? 10 : 0;
   const bonus_reason = bonus_ore > 0
