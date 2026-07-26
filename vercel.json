@@ -2,15 +2,189 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "vite build",
   "outputDirectory": "dist",
+  "regions": ["fra1"],
   "functions": {
     "api/scan.ts": {
-      "includeFiles": "{modules,lib}/**"
+      "includeFiles": "{modules,lib}/**",
+      "regions": ["fra1"]
+    },
+    "api/_rules.ts": {
+      "includeFiles": "{modules,lib}/**",
+      "regions": ["fra1"]
+    },
+    "api/kpi/co2.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/kpi/scans.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/bins/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/bins/**/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/reports/csrd.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/auth/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/b2b/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/dawa/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/give/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/kommune/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/kyc/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/logistics/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/marketplace/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/nudge/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/products/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/psp/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/scans/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/stripe/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/wallet/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/webauthn/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
+    },
+    "api/*.ts": {
+      "includeFiles": "lib/**",
+      "regions": ["fra1"]
     }
   },
   "rewrites": [
     {
       "source": "/((?!api).*)",
       "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-scripts.com https://*.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://generativelanguage.googleapis.com https://*.vercel-insights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self), microphone=(), geolocation=(self), interest-cohort=()"
+        },
+        {
+          "key": "X-DNS-Prefetch-Control",
+          "value": "on"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Cross-Origin-Resource-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "credentialless"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, no-cache, must-revalidate, proxy-revalidate"
+        },
+        {
+          "key": "X-RateLimit-Policy",
+          "value": "middleware:sliding-window; window=60s; limit=100; scope=ip+route"
+        },
+        {
+          "key": "X-RateLimit-Enforced-By",
+          "value": "edge-middleware"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://cirkel.vercel.app"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, X-Requested-With"
+        },
+        {
+          "key": "Access-Control-Max-Age",
+          "value": "86400"
+        }
+      ]
     }
   ]
 }
