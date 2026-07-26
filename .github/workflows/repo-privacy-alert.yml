@@ -1,0 +1,118 @@
+name: Repo Privacy Alert
+
+on:
+  schedule:
+    # Ugentligt: hver mandag kl. 08:00 UTC
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-privacy:
+    name: Check repository visibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if repository is public
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Checking visibility for $REPO"
+          VISIBILITY=$(gh api "repos/$REPO" --jq '.visibility')
+          IS_PRIVATE=$(gh api "repos/$REPO" --jq '.private')
+          echo "visibility=$VISIBILITY"
+          echo "private=$IS_PRIVATE"
+          echo "visibility=$VISIBILITY" >> "$GITHUB_OUTPUT"
+          echo "is_private=$IS_PRIVATE" >> "$GITHUB_OUTPUT"
+
+      - name: Success — repo is private
+        if: steps.check.outputs.is_private == 'true'
+        run: |
+          echo "OK: ${{ github.repository }} er PRIVATE. Ingen handling nødvendig."
+
+      - name: Check for existing open alert issue
+        if: steps.check.outputs.is_private != 'true'
+        id: existing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          EXISTING=$(gh issue list \
+            --repo "$REPO" \
+            --state open \
+            --label "security,privacy-alert" \
+            --search "Repo Privacy Alert in:title" \
+            --json number \
+            --jq 'length')
+          echo "existing_count=$EXISTING" >> "$GITHUB_OUTPUT"
+          echo "Found $EXISTING existing open alert issue(s)"
+
+      - name: Ensure required labels exist
+        if: steps.check.outputs.is_private != 'true' && steps.existing.outputs.existing_count == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh label create "security" --repo "$REPO" --color "d73a4a" --description "Security-related issue" 2>/dev/null || true
+          gh label create "privacy-alert" --repo "$REPO" --color "b60205" --description "Repository privacy/visibility alert" 2>/dev/null || true
+
+      - name: Open alert issue — repo is PUBLIC
+        if: steps.check.outputs.is_private != 'true' && steps.existing.outputs.existing_count == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh issue create \
+            --repo "$REPO" \
+            --title "Repo Privacy Alert: cirkel-system er PUBLIC" \
+            --label "security,privacy-alert" \
+            --body "$(cat <<'EOF'
+          ## Repo Privacy Alert
+
+          **Status:** Repositoriet `${{ github.repository }}` er registreret som **PUBLIC**.
+
+          Detekteret af workflow `repo-privacy-alert.yml` under den ugentlige kontrol.
+
+          ---
+
+          ### Hvorfor er dette et problem?
+
+          `cirkel-system` skal være **PRIVATE**. Et offentligt repo eksponerer:
+
+          - **Kildekode og forretningslogik** — konkurrenter kan læse hele arkitekturen, backlog, roadmap og interne beslutninger.
+          - **Konfigurationsfiler** — `package.json`, workflows, deployment-scripts kan afsløre interne services, tredjeparts-integrationer og angrebsflader.
+          - **Historik og commits** — selv hvis secrets ikke ligger i HEAD, kan de være committet tidligere i git-historikken (tokens, API-nøgler, database-URLs).
+          - **Issues, PRs og diskussioner** — interne diskussioner om sårbarheder, kundedata eller strategiske beslutninger bliver offentligt læsbare.
+          - **GDPR / DPIA** — hvis repoet indeholder personhenførbar information (også i logs, test-fixtures eller kommentarer), er offentliggørelse et databrud, der skal anmeldes til Datatilsynet inden for 72 timer.
+          - **Fork- og clone-lækage** — offentlige repos indekseres af GitHub-search, code-search-engines og AI-træningspipelines. Selv hvis du gør det privat igen, kan indholdet være kopieret.
+
+          ### Hvad skal der ske nu?
+
+          1. **Gå til:** https://github.com/${{ github.repository }}/settings
+          2. Scroll ned til **"Danger Zone"**
+          3. Klik **"Change repository visibility"** → **"Make private"**
+          4. Bekræft med repo-navnet.
+          5. Kør workflow'en igen manuelt (Actions → Repo Privacy Alert → Run workflow) for at bekræfte at status er PRIVATE.
+          6. **Roter alle secrets** der potentielt er blevet eksponeret mens repoet var public (GitHub Actions secrets, Vercel env vars, Supabase service keys, Stripe keys).
+          7. **Audit git-historikken** for utilsigtet committede secrets: `git log -p | grep -iE '(api[_-]?key|token|secret|password)'`.
+
+          ### Metadata
+
+          - **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          - **Detekteret:** $(date -u +"%Y-%m-%d %H:%M UTC")
+          - **Visibility:** ${{ steps.check.outputs.visibility }}
+
+          ---
+
+          Dette issue lukkes automatisk ikke — luk det manuelt når repoet er sat tilbage til PRIVATE og secrets er roteret.
+          EOF
+          )"
+
+      - name: Skip — alert already open
+        if: steps.check.outputs.is_private != 'true' && steps.existing.outputs.existing_count != '0'
+        run: |
+          echo "Repo er PUBLIC, men et alert-issue er allerede åbent. Springer over for at undgå spam."

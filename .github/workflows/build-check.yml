@@ -1,0 +1,61 @@
+# Cirkel Build Check — CI  [Fase 1 · Modul 4.4 / Build & Test Gate]
+# Kører på pull_request + push til master.
+# Verificerer at koden kan bygges, typer er valide, og alle tests passerer.
+#
+# Komplementerer .github/workflows/gate-check.yml (governance-regler).
+
+name: Cirkel Build Check
+
+on:
+  pull_request:
+    branches: [master, main]
+  push:
+    branches: [master]
+
+# Cancel-in-progress: nye pushes til samme branch dræber igangværende runs
+concurrency:
+  group: build-check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Installer dependencies (npm ci)
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Lint (tsc --noEmit)
+        run: npm run lint
+
+      - name: Kør tests (vitest run)
+        run: npm run test:run
+
+      - name: Vite build sanity-check
+        run: npx vite build
+        env:
+          NODE_ENV: production
+
+      - name: Upload test-coverage artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage-${{ github.run_id }}
+          path: |
+            coverage/
+            !coverage/tmp/
+          if-no-files-found: ignore
+          retention-days: 14

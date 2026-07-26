@@ -215,3 +215,128 @@ create trigger trg_on_auth_user_created
 -- CREATE POLICY "Users read own wallet"
 --     ON public.wallets FOR SELECT USING (auth.uid() = user_id);
 -- ====================================================================
+
+-- ====================================================================
+-- 7. KPI AGGREGATION VIEWS
+-- Purpose: Read-only aggregation views for dashboard KPIs (CO2, materials, engagement)
+-- ====================================================================
+
+-- A. Daglig CO2-besparelse og scan-antal
+create or replace view public.kpi_co2_daily as
+select
+    date_trunc('day', created_at) as day,
+    sum(co2_grams) / 1000.0 as total_co2_kg,
+    count(*) as scan_count
+from public.scans
+group by 1;
+
+-- B. Materiale-fordeling (vægt + CO2 pr. materialetype)
+create or replace view public.kpi_material_breakdown as
+select
+    material,
+    count(*) as scan_count,
+    sum(weight_grams) / 1000.0 as total_kg,
+    sum(co2_grams) / 1000.0 as total_co2_kg
+from public.scans
+group by material;
+
+-- C. Ugentligt bruger-engagement (unikke brugere, scans, gns. vægt)
+create or replace view public.kpi_user_engagement as
+select
+    date_trunc('week', s.created_at) as week,
+    count(distinct s.user_id) as unique_users,
+    count(*) as total_scans,
+    avg(s.weight_grams) as avg_weight_grams
+from public.scans s
+group by 1;
+
+-- ====================================================================
+-- 8. MIGRATIONS APPLIED ON TOP OF THIS BASELINE
+-- ====================================================================
+-- Denne fil (supabase_schema.sql) er baseline-skemaet (profiles, scans,
+-- ledger, KPI-views). Live-DB har yderligere tabeller tilføjet via
+-- migrations under supabase/migrations/. Se supabase/migrations/README.md
+-- for fuld apply-ordre, FK-graf og cascade-tabel.
+--
+-- Kanonisk migrations-rækkefølge (verificeret 2026-07-26):
+--   001_consolidate.sql               ← no-op (repo-hygiejne; etablerer
+--                                       supabase_schema.sql som eneste
+--                                       kanoniske skema-kilde)
+--   [002 mangler bevidst — reserveret til retro-dok af udokumenterede
+--    live-migrations: add_user_type_to_profiles,
+--    add_portal_features_admin_flags,
+--    restrict_set_portal_features_to_service_role]
+--   003_webauthn_credentials.sql      → public.webauthn_credentials
+--                                       (FK → profiles)
+--   004_smart_bins.sql                → public.smart_bins
+--                                       (bruger baseline handle_updated_at)
+--   005_biometric_verifications.sql   → public.biometric_verifications
+--                                       (FK → profiles CASCADE,
+--                                        webauthn_credentials fra 003
+--                                        SET NULL; append-only log)
+--   006_kommune_waste_stats.sql       → public.kommune_waste_stats
+--                                       + view kommune_waste_daily
+--                                       (FK → smart_bins fra 004 CASCADE)
+--   007_cases.sql                     → public.cases
+--                                       (FK → profiles CASCADE,
+--                                        scans SET NULL,
+--                                        assigned_to→profiles SET NULL)
+--   008_material_passports.sql        → public.material_passports
+--                                       (producer_id nullable UUID — soft
+--                                        reference til b2b_producers fra 013,
+--                                        FK ikke enforced pga. seed-order)
+--   009_bulky_waste_marketplace.sql   → public.bulky_waste_marketplace
+--                                       (FK → profiles CASCADE,
+--                                        collector_user_id→profiles SET NULL)
+--   010_municipal_rule_overrides.sql  → public.municipal_rule_overrides
+--                                       + view municipal_rule_overrides_active
+--   011_municipal_tax_rebates.sql     → public.municipal_tax_rebates
+--                                       (FK → profiles CASCADE)
+--   012_logistics_bounties.sql        → public.logistics_bounties
+--                                       (FK → bulky_waste_marketplace fra 009
+--                                        SET NULL, claimed_by→profiles
+--                                        SET NULL; RLS-policy læser
+--                                        profiles.user_type — sat af
+--                                        udokumenteret live-migration
+--                                        add_user_type_to_profiles TRIN 2)
+--   013_b2b_producers.sql             → public.b2b_producers
+--                                       (ingen FK; UNIQUE på cvr_number,
+--                                        contact_email, stripe_customer_id)
+--   014_mitid_wallet_tables.sql       → public.mitid_pkce_state,
+--                                       wallet_balances, wallet_pool_state,
+--                                       wallet_payouts
+--                                       (FK → profiles CASCADE ×2,
+--                                        b2b_producers fra 013 CASCADE,
+--                                        wallet_payouts.user_id RESTRICT;
+--                                        definerer EGEN set_updated_at()
+--                                        i stedet for baseline
+--                                        handle_updated_at — kendt drift)
+--   015_push_subscriptions.sql        → public.push_subscriptions
+--                                       (ingen FK; server-only RLS,
+--                                        firebase_uid som logisk ejer)
+--
+-- KENDTE UDOKUMENTEREDE LIVE-MIGRATIONS (ikke gemt som .sql-filer):
+--   add_user_type_to_profiles                    (TRIN 2, ~2026-07-06)
+--   add_portal_features_admin_flags              (TRIN 3, ~2026-07-07)
+--   restrict_set_portal_features_to_service_role (TRIN 3 hotfix)
+-- Disse bør retro-dokumenteres som migrations 002/002a/002b når prioriteret.
+--
+-- KNOWN SCHEMA-DRIFT (bevidst ikke rettet her — kræver [ACCEPTED-BY-MICHAEL]):
+--   * kpi_co2_daily + kpi_material_breakdown refererer scans.co2_grams,
+--     men public.scans har ikke den kolonne (kun weight_grams). Views vil
+--     fejle med 42703 hvis kaldt før scans udvides. Rettes ved enten:
+--       (a) ALTER TABLE public.scans ADD COLUMN co2_grams NUMERIC(12,2);
+--       (b) omskriv views til at bruge weight_grams × emission_factors-lookup.
+--   * migration 008.producer_id har ingen hard FK til b2b_producers (013).
+--     Tilføj efter behov:
+--       ALTER TABLE public.material_passports
+--         ADD CONSTRAINT material_passports_producer_fk
+--         FOREIGN KEY (producer_id) REFERENCES public.b2b_producers(producer_id)
+--         ON DELETE SET NULL;
+--   * migration 014 definerer public.set_updated_at() i stedet for at genbruge
+--     baseline public.handle_updated_at(). To parallelle funktioner med samme
+--     effekt. Konsolider til handle_updated_at() ved næste refactor.
+--   * migration 012.logistics_bounties RLS-policy læser profiles.user_type
+--     som ikke er defineret i baseline (kun live via TRIN 2). Ny RLS-check
+--     vil fejle på et clean-slate lokalt setup indtil migration 002 skrives.
+-- ====================================================================

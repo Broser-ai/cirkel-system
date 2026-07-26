@@ -1,0 +1,25 @@
+# CODEOWNERS — Cirkel System
+# Standard GitHub CODEOWNERS format
+# Each line: <pattern> <owner> [<owner> ...]
+# Last matching pattern wins.
+
+# Default owner for everything
+*                           @Broser2712
+
+# Agent-konfiguration
+.claude/agents/*            @Broser2712
+
+# Supabase migrations — kræver [ACCEPTED-BY-MICHAEL] i commit/PR
+supabase/migrations/*       @Broser2712
+
+# Kanonisk zone — kildekode
+src/                        @Broser2712
+
+# Kanonisk server-entrypoint
+server.ts                   @Broser2712
+
+# Git hooks
+.husky/                     @Broser2712
+
+# CI/CD workflows
+.github/workflows/          @Broser2712
